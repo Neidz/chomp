@@ -33,6 +33,7 @@ func main() {
 		weightDataPath:   filepath.Join(homeDir, ".local/share/chomp/weight.json"),
 	}
 
+	helpFlag := flag.Bool("help", false, "Display help")
 	flag.Func("date", "Date for action (YYYY-MM-DD)", func(val string) error {
 		parsed, err := time.Parse(time.DateOnly, val)
 		if err != nil {
@@ -47,6 +48,12 @@ func main() {
 	flag.Parse()
 	args := flag.Args()
 
+	if *helpFlag {
+		help := getHelp()
+		fmt.Println(help)
+		return
+	}
+
 	err = handleCommand(cfg, args)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
@@ -56,7 +63,7 @@ func main() {
 
 func handleCommand(cfg config, args []string) error {
 	if len(args) == 0 {
-		return errors.New("command not provided")
+		return errors.New("command not provided, use help for list of available commands")
 	}
 
 	command := args[0]
@@ -78,6 +85,9 @@ func handleCommand(cfg config, args []string) error {
 			parsed, err := strconv.Atoi(v)
 			if err != nil {
 				return fmt.Errorf("invalid value for calories, expected integer but got %s", v)
+			}
+			if parsed < 0 {
+				return fmt.Errorf("invalid value for calories, expected positive integer but got %d instead", parsed)
 			}
 			vals[k] = parsed
 		}
@@ -120,9 +130,6 @@ func handleCommand(cfg config, args []string) error {
 			if len(vals) > 1 {
 				return fmt.Errorf("calories setTarget command requires one value but got %d instead", len(vals))
 			}
-			if vals[0] < 0 {
-				return fmt.Errorf("invalid value for calories setTarget command, expected positive integer but got %d instead", vals[0])
-			}
 			err := calories.SetTarget(vals[0])
 			if err != nil {
 				return err
@@ -132,7 +139,7 @@ func handleCommand(cfg config, args []string) error {
 		}
 
 		stats := calories.Stats(cfg.date)
-		fmt.Printf(stats)
+		fmt.Print(stats)
 	case "weight":
 		weight, err := LoadWeight(cfg.weightDataPath)
 		if err != nil {
@@ -172,11 +179,43 @@ func handleCommand(cfg config, args []string) error {
 		}
 
 		stats := weight.Stats(cfg.date)
-		fmt.Printf(stats)
+		fmt.Print(stats)
 	case "help":
+		help := getHelp()
+		fmt.Println(help)
 	default:
 		return errors.New("unknown command")
 	}
 
 	return nil
+}
+
+func getHelp() string {
+	return `
+	Usage: chomp [command] [subcommand] [args...]
+
+	Available Commands:
+	 	calories                  Manage calorie intake. If no subcommand is provided, it will display the summary
+
+		    Subcommands:
+		    	get               Get the calories for the selected date
+		     	add <values...>   Add calorie entries for the selected date
+		      	clear             Clear all calorie entries for the selected date
+		       	fill              Fill remaining calories to reach the target for the selected date
+		        pop               Remove the last calorie entry for the selected date
+		        setTarget <value> Set a daily target for calorie intake
+
+		weight                    Manage weight tracking. If no subcommand is provided, it will display the summary
+
+		    Subcommands:
+		    	get               Get the weight for the selected date
+		     	set <value>       Set the weight for the selected date
+				clear             Clear the weight entry for the selected date
+
+		help                      Display this help message
+
+	Flags:
+		--date                    Set the date for the command execution (default is today, format is YYYY-MM-DD)
+		--help                    Display this help message
+	`
 }
