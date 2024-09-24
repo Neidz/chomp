@@ -64,6 +64,47 @@ func (w *Weight) Delete(date time.Time) error {
 	return w.save()
 }
 
+func (w *Weight) averageFromRange(startDate time.Time, endDate time.Time) (float32, error) {
+	switch endDate.Compare(startDate) {
+	case 0:
+		return 0, fmt.Errorf("invalid range, endDate has to be different than startDate")
+	case -1:
+		return 0, fmt.Errorf("invalid range, endDate has to be date after startDate")
+	}
+
+	amount := float32(0)
+	sum := 0
+
+	for d := startDate; !d.After(endDate); d = d.AddDate(0, 0, 1) {
+		weight, ok := w.Data[d]
+		if ok {
+			amount += weight
+			sum++
+		}
+	}
+
+	if sum == 0 {
+		return 0, fmt.Errorf("no entires for this range")
+	}
+
+	return amount / float32(sum), nil
+}
+
+func (w *Weight) weeklyChange() string {
+	today := time.Now().Truncate(time.Hour * 24)
+	avgLastWeek, err := w.averageFromRange(today.AddDate(0, 0, -7), today)
+	if err != nil {
+		return "-"
+	}
+	avgWeekBefore, err := w.averageFromRange(today.AddDate(0, 0, -14), today.AddDate(0, 0, -7))
+	if err != nil {
+		return "-"
+	}
+	weeklyChange := avgLastWeek - avgWeekBefore
+
+	return fmt.Sprintf("%.1f", weeklyChange)
+}
+
 func (w *Weight) save() error {
 	bytes, err := json.MarshalIndent(w, "", "  ")
 	if err != nil {
@@ -84,7 +125,9 @@ func (w *Weight) Stats(date time.Time) string {
 		return fmt.Sprintf("weight: -\n")
 	}
 
-	return fmt.Sprintf("[%s]\nweight: %.1f\n", date.Format(time.DateOnly), weight)
+	weeklyChange := w.weeklyChange()
+
+	return fmt.Sprintf("[%s]\nweight: %.1f\nweekly change: %s\n", date.Format(time.DateOnly), weight, weeklyChange)
 }
 
 func LoadWeight(path string) (Weight, error) {
@@ -134,7 +177,5 @@ func createDefaultWeight(path string) error {
 		Data: make(map[time.Time]float32),
 		Path: path,
 	}
-	weight.save()
-
-	return nil
+	return weight.save()
 }

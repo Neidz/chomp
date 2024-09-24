@@ -22,10 +22,7 @@ func main() {
 		panic(fmt.Sprintf("failed to get home directory for config: %s\n", err.Error()))
 	}
 
-	today, err := time.Parse(time.DateOnly, time.Now().Format(time.DateOnly))
-	if err != nil {
-		panic(fmt.Sprintf("failed to create current time: %s\n", err.Error()))
-	}
+	today := time.Now().Truncate(time.Hour * 24)
 
 	cfg := config{
 		date:             today,
@@ -192,30 +189,30 @@ func handleCommand(cfg config, args []string) error {
 
 func getHelp() string {
 	return `
-	Usage: chomp [command] [subcommand] [args...]
+    Usage: chomp [command] [subcommand] [args...]
 
-	Available Commands:
-	 	calories                  Manage calorie intake. If no subcommand is provided, it will display the summary
+    Available Commands:
+      calories                  Manage calorie intake. If no subcommand is provided, it will display the summary
 
-		    Subcommands:
-		    	get               Get the calories for the selected date
-		     	add <values...>   Add calorie entries for the selected date
-		      	clear             Clear all calorie entries for the selected date
-		       	fill              Fill remaining calories to reach the target for the selected date
-		        pop               Remove the last calorie entry for the selected date
-		        setTarget <value> Set a daily target for calorie intake
+        Subcommands:
+          get               Get the calories for the selected date
+            add <values...>   Add calorie entries for the selected date
+            clear             Clear all calorie entries for the selected date
+            fill              Fill remaining calories to reach the target for the selected date
+            pop               Remove the last calorie entry for the selected date
+            setTarget <value> Set a daily target for calorie intake
 
-		weight                    Manage weight tracking. If no subcommand is provided, it will display the summary
+      weight                    Manage weight tracking. If no subcommand is provided, it will display the summary
 
-		    Subcommands:
-		    	get               Get the weight for the selected date
-		     	set <value>       Set the weight for the selected date
-				clear             Clear the weight entry for the selected date
+        Subcommands:
+          get               Get the weight for the selected date
+          set <value>       Set the weight for the selected date
+          clear             Clear the weight entry for the selected date
 
-		help                      Display this help message
+      help                      Display this help message
 
-	Flags:
-		--date                    Set the date for the command execution (default is today, format is YYYY-MM-DD)
-		--help                    Display this help message
+    Flags:
+      --date                    Set the date for the command execution (default is today, format is YYYY-MM-DD)
+      --help                    Display this help message
 	`
 }
