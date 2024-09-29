@@ -22,7 +22,7 @@ func main() {
 		panic(fmt.Sprintf("failed to get home directory for config: %s\n", err.Error()))
 	}
 
-	today := time.Now().Truncate(time.Hour * 24)
+	today := Today()
 
 	cfg := config{
 		date:             today,
@@ -181,15 +181,64 @@ func handleCommand(cfg config, args []string) error {
 		help := getHelp()
 		fmt.Println(help)
 	case "sync":
-		_, err := LoadFitnotes(subCommand)
+		fitnotes, err := LoadFitnotes(subCommand)
 		if err != nil {
 			return err
 		}
+
+		calories, err := LoadCalories(cfg.caloriesDataPath)
+		if err != nil {
+			return err
+		}
+		weight, err := LoadWeight(cfg.weightDataPath)
+		if err != nil {
+			return err
+		}
+
+		calAdded := 0
+		calAlreadyFound := 0
+		for _, rec := range fitnotes.calories {
+			err := calories.SafeAdd(rec.date, []int{rec.value})
+			switch err {
+			case nil:
+				calAdded++
+			case ErrDateRecordAlreadyExists:
+				calAlreadyFound++
+			default:
+				return err
+			}
+		}
+
+		weightsAdded := 0
+		weightsAlreadyFound := 0
+		for _, rec := range fitnotes.weights {
+			err := weight.SafeSet(rec.date, rec.value)
+			switch err {
+			case nil:
+				weightsAdded++
+			case ErrDateRecordAlreadyExists:
+				weightsAlreadyFound++
+			default:
+				return err
+			}
+		}
+
+		fmt.Printf("calorie records added: %d\ncalorie records not added (because of existing records): %d\n", calAdded, calAlreadyFound)
+		fmt.Printf("weight records added: %d\nweight records not added (because of existing records): %d\n", weightsAdded, weightsAlreadyFound)
 	default:
 		return errors.New("unknown command")
 	}
 
 	return nil
+}
+
+func Today() time.Time {
+	today, err := time.Parse(time.DateOnly, time.Now().Format(time.DateOnly))
+	if err != nil {
+		panic(fmt.Sprintf("failed to create current time: %s\n", err.Error()))
+	}
+
+	return today
 }
 
 func getHelp() string {
@@ -214,6 +263,8 @@ func getHelp() string {
           set <value>       Set the weight for the selected date
           clear             Clear the weight entry for the selected date
 
+      sync <path>               Safely add data from fitnotes app. This will not overwrite any of the existing data
+
       help                      Display this help message
 
     Flags:
@@ -221,3 +272,7 @@ func getHelp() string {
       --help                    Display this help message
 	`
 }
+
+var (
+	ErrDateRecordAlreadyExists = errors.New("record for this date already exists")
+)

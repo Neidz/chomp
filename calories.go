@@ -57,6 +57,17 @@ func (c *Calories) Add(date time.Time, toAdd []int) error {
 	return c.save()
 }
 
+func (c *Calories) SafeAdd(date time.Time, toAdd []int) error {
+	_, ok := c.Data[date]
+	if ok {
+		return ErrDateRecordAlreadyExists
+	} else {
+		c.Data[date] = toAdd
+	}
+
+	return c.save()
+}
+
 func (c *Calories) Sum(date time.Time) int {
 	calories, ok := c.Data[date]
 	if !ok {

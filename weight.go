@@ -59,6 +59,17 @@ func (w *Weight) Set(date time.Time, weight float32) error {
 	return w.save()
 }
 
+func (w *Weight) SafeSet(date time.Time, weight float32) error {
+	_, ok := w.Data[date]
+	if ok {
+		return ErrDateRecordAlreadyExists
+	} else {
+		w.Data[date] = weight
+	}
+
+	return w.save()
+}
+
 func (w *Weight) Delete(date time.Time) error {
 	delete(w.Data, date)
 	return w.save()
@@ -91,7 +102,7 @@ func (w *Weight) averageFromRange(startDate time.Time, endDate time.Time) (float
 }
 
 func (w *Weight) weeklyChange() string {
-	today := time.Now().Truncate(time.Hour * 24)
+	today := Today()
 	avgLastWeek, err := w.averageFromRange(today.AddDate(0, 0, -7), today)
 	if err != nil {
 		return "-"
@@ -122,7 +133,7 @@ func (w *Weight) save() error {
 func (w *Weight) Stats(date time.Time) string {
 	weight, ok := w.Data[date]
 	if !ok {
-		return fmt.Sprintf("weight: -\n")
+		return fmt.Sprintf("[%s]\nweight: -\n", date)
 	}
 
 	weeklyChange := w.weeklyChange()

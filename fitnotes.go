@@ -41,8 +41,8 @@ func LoadFitnotes(path string) (Fitnotes, error) {
 		return Fitnotes{}, err
 	}
 
-	if firstRow[0] != "Date" || firstRow[1] != "Measurement" || firstRow[2] != "Value" {
-		return Fitnotes{}, errors.New("invalid csv format, expected columns: Date Measurement Value")
+	if firstRow[0] != "Date" || firstRow[2] != "Measurement" || firstRow[3] != "Value" {
+		return Fitnotes{}, errors.New("invalid csv format, expected columns: Date Time Measurement Value")
 	}
 
 	var calories []FitnotesCaloriesDataRecord
@@ -61,31 +61,25 @@ func LoadFitnotes(path string) (Fitnotes, error) {
 		if err != nil {
 			return Fitnotes{}, err
 		}
-		measurement := record[1]
-		value := record[2]
+		measurement := record[2]
+		val := record[3]
+		parsedVal, err := strconv.ParseFloat(val, 32)
+		if err != nil {
+			return Fitnotes{}, err
+		}
 
 		if measurement == "Calories" {
-			parsed, err := strconv.ParseInt(value, 10, 32)
-			if err != nil {
-				return Fitnotes{}, err
-			}
-
 			record := FitnotesCaloriesDataRecord{
 				date:  date,
-				value: int(parsed),
+				value: int(parsedVal),
 			}
 			calories = append(calories, record)
 		}
 
 		if measurement == "Bodyweight" {
-			parsed, err := strconv.ParseFloat(value, 32)
-			if err != nil {
-				return Fitnotes{}, err
-			}
-
 			record := FitnotesWeightDataRecord{
 				date:  date,
-				value: float32(parsed),
+				value: float32(parsedVal),
 			}
 			weights = append(weights, record)
 		}
