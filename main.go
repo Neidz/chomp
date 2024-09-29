@@ -180,6 +180,11 @@ func handleCommand(cfg config, args []string) error {
 	case "help":
 		help := getHelp()
 		fmt.Println(help)
+	case "sync":
+		_, err := LoadFitnotes(subCommand)
+		if err != nil {
+			return err
+		}
 	default:
 		return errors.New("unknown command")
 	}
