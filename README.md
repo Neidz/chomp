@@ -41,6 +41,6 @@ Available Commands:
   help                  Display this help message
 
 Flags:
-  --date              Set the date for the command execution (default is today, format is YYYY-MM-DD)
-  --help              Display this help message
+  --date                Set the date for the command execution (default is today, format is YYYY-MM-DD)
+  --help                Display this help message
 ```
