@@ -65,123 +65,155 @@ func handleCommand(cfg config, args []string) error {
 
 	command := args[0]
 	subCommand := "default"
-	var rawVals []string
+	var rawArgs []string
 
 	if len(args) > 1 {
 		subCommand = args[1]
 	}
 
 	if len(args) > 2 {
-		rawVals = args[2:]
+		rawArgs = args[2:]
 	}
 
 	switch command {
 	case "calories":
-		vals := make([]int, len(rawVals))
-		for k, v := range rawVals {
-			parsed, err := strconv.Atoi(v)
-			if err != nil {
-				return fmt.Errorf("invalid value for calories, expected integer but got %s", v)
-			}
-			if parsed < 0 {
-				return fmt.Errorf("invalid value for calories, expected positive integer but got %d instead", parsed)
-			}
-			vals[k] = parsed
-		}
-
-		calories, err := LoadCalories(cfg.caloriesDataPath)
-		if err != nil {
-			return err
-		}
-
-		switch subCommand {
-		case "default":
-		case "get":
-		case "add":
-			if len(vals) == 0 {
-				return fmt.Errorf("calories add requires at least one value but got 0 instead")
-			}
-			err := calories.Add(cfg.date, vals)
-			if err != nil {
-				return err
-			}
-		case "clear":
-			err := calories.Delete(cfg.date)
-			if err != nil {
-				return err
-			}
-		case "fill":
-			err := calories.Fill(cfg.date)
-			if err != nil {
-				return err
-			}
-		case "pop":
-			err := calories.Pop(cfg.date)
-			if err != nil {
-				return err
-			}
-		case "setTarget":
-			if len(vals) == 0 {
-				return errors.New("missing value for calories setTarget command")
-			}
-			if len(vals) > 1 {
-				return fmt.Errorf("calories setTarget command requires one value but got %d instead", len(vals))
-			}
-			err := calories.SetTarget(vals[0])
-			if err != nil {
-				return err
-			}
-		default:
-			return fmt.Errorf("unknown calories command")
-		}
-
-		stats := calories.Stats(cfg.date)
-		fmt.Print(stats)
+		return handleCaloriesCommand(cfg, subCommand, rawArgs)
 	case "weight":
-		weight, err := LoadWeight(cfg.weightDataPath)
-		if err != nil {
-			return err
-		}
-
-		switch subCommand {
-		case "default":
-		case "get":
-		case "set":
-			if len(rawVals) == 0 {
-				return fmt.Errorf("missing value for weight set, expected float")
-			}
-			if len(rawVals) > 1 {
-				return fmt.Errorf("invalid value for weight set, expected one float but found multiple values")
-			}
-
-			parsedVal, err := strconv.ParseFloat(rawVals[0], 32)
-			if err != nil {
-				return fmt.Errorf("invalid value for weight set, expected float but got %s", rawVals[0])
-			}
-			if parsedVal < 0 {
-				return fmt.Errorf("invalid value for weight set command, expected positive float but got %.1f instead", parsedVal)
-			}
-
-			err = weight.Set(cfg.date, float32(parsedVal))
-			if err != nil {
-				return err
-			}
-		case "clear":
-			err := weight.Delete(cfg.date)
-			if err != nil {
-				return err
-			}
-		default:
-			return fmt.Errorf("unknown weight command")
-		}
-
-		stats := weight.Stats(cfg.date)
-		fmt.Print(stats)
+		return handleWeightCommand(cfg, subCommand, rawArgs)
+	case "sync":
+		return handleSyncCommand(cfg, subCommand, rawArgs)
 	case "help":
 		help := getHelp()
 		fmt.Println(help)
-	case "sync":
-		fitnotes, err := LoadFitnotes(subCommand)
+	default:
+		return errors.New("unknown command")
+	}
+
+	return nil
+}
+
+func handleCaloriesCommand(cfg config, command string, rawVals []string) error {
+	vals := make([]int, len(rawVals))
+	for k, v := range rawVals {
+		parsed, err := strconv.Atoi(v)
+		if err != nil {
+			return fmt.Errorf("invalid value for calories, expected integer but got %s", v)
+		}
+		if parsed < 0 {
+			return fmt.Errorf("invalid value for calories, expected positive integer but got %d instead", parsed)
+		}
+		vals[k] = parsed
+	}
+
+	calories, err := LoadCalories(cfg.caloriesDataPath)
+	if err != nil {
+		return err
+	}
+
+	switch command {
+	case "default":
+	case "get":
+	case "add":
+		if len(vals) == 0 {
+			return fmt.Errorf("calories add requires at least one value but got 0 instead")
+		}
+		err := calories.Add(cfg.date, vals)
+		if err != nil {
+			return err
+		}
+	case "clear":
+		err := calories.Delete(cfg.date)
+		if err != nil {
+			return err
+		}
+	case "fill":
+		err := calories.Fill(cfg.date)
+		if err != nil {
+			return err
+		}
+	case "pop":
+		err := calories.Pop(cfg.date)
+		if err != nil {
+			return err
+		}
+	case "setTarget":
+		if len(vals) == 0 {
+			return errors.New("missing value for calories setTarget command")
+		}
+		if len(vals) > 1 {
+			return fmt.Errorf("calories setTarget command requires one value but got %d instead", len(vals))
+		}
+		err := calories.SetTarget(vals[0])
+		if err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unknown calories command")
+	}
+
+	stats := calories.Stats(cfg.date)
+	fmt.Print(stats)
+
+	return nil
+}
+
+func handleWeightCommand(cfg config, command string, args []string) error {
+	weight, err := LoadWeight(cfg.weightDataPath)
+	if err != nil {
+		return err
+	}
+
+	switch command {
+	case "default":
+	case "get":
+	case "set":
+		if len(args) == 0 {
+			return fmt.Errorf("missing value for weight set, expected float")
+		}
+		if len(args) > 1 {
+			return fmt.Errorf("invalid value for weight set, expected one float but found multiple values")
+		}
+
+		parsedVal, err := strconv.ParseFloat(args[0], 32)
+		if err != nil {
+			return fmt.Errorf("invalid value for weight set, expected float but got %s", args[0])
+		}
+		if parsedVal < 0 {
+			return fmt.Errorf("invalid value for weight set command, expected positive float but got %.1f instead", parsedVal)
+		}
+
+		err = weight.Set(cfg.date, float32(parsedVal))
+		if err != nil {
+			return err
+		}
+	case "clear":
+		err := weight.Delete(cfg.date)
+		if err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unknown weight command")
+	}
+
+	stats := weight.Stats(cfg.date)
+	fmt.Print(stats)
+
+	return nil
+}
+
+func handleSyncCommand(cfg config, command string, args []string) error {
+	switch command {
+	case "fitnotes":
+		if len(args) == 0 {
+			return fmt.Errorf("missing value for sync fitnotes, expected path")
+		}
+		if len(args) > 1 {
+			return fmt.Errorf("invalid value for sync fitnotes, expected one path but got multiple arguments")
+		}
+
+		path := args[0]
+
+		fitnotes, err := LoadFitnotes(path)
 		if err != nil {
 			return err
 		}
@@ -225,6 +257,7 @@ func handleCommand(cfg config, args []string) error {
 
 		fmt.Printf("calorie records added: %d\ncalorie records not added (because of existing records): %d\n", calAdded, calAlreadyFound)
 		fmt.Printf("weight records added: %d\nweight records not added (because of existing records): %d\n", weightsAdded, weightsAlreadyFound)
+
 	default:
 		return errors.New("unknown command")
 	}
@@ -243,34 +276,33 @@ func Today() time.Time {
 
 func getHelp() string {
 	return `
-    Usage: chomp [command] [subcommand] [args...]
+Usage: chomp [command] [subcommand] [args...]
 
-    Available Commands:
-      calories                  Manage calorie intake. If no subcommand is provided, it will display the summary
+Available Commands:
+  calories              Manage calorie intake. If no subcommand is provided, it will display the summary
+    Subcommands:
+      get               Get the calories for the selected date
+      add <values...>   Add calorie entries for the selected date
+      clear             Clear all calorie entries for the selected date
+      fill              Fill remaining calories to reach the target for the selected date
+      pop               Remove the last calorie entry for the selected date
+      setTarget <value> Set a daily target for calorie intake
 
-        Subcommands:
-          get               Get the calories for the selected date
-            add <values...>   Add calorie entries for the selected date
-            clear             Clear all calorie entries for the selected date
-            fill              Fill remaining calories to reach the target for the selected date
-            pop               Remove the last calorie entry for the selected date
-            setTarget <value> Set a daily target for calorie intake
+  weight                Manage weight tracking. If no subcommand is provided, it will display the summary
+    Subcommands:
+      get               Get the weight for the selected date
+      set <value>       Set the weight for the selected date
+      clear             Clear the weight entry for the selected date
 
-      weight                    Manage weight tracking. If no subcommand is provided, it will display the summary
+  sync                  Synchronize current data with data from different applications
+    Subcommands:
+      fitnotes <path>   Safely add data from fitnotes app. This will not overwrite any of the existing data
 
-        Subcommands:
-          get               Get the weight for the selected date
-          set <value>       Set the weight for the selected date
-          clear             Clear the weight entry for the selected date
+  help                  Display this help message
 
-      sync <path>               Safely add data from fitnotes app. This will not overwrite any of the existing data
-
-      help                      Display this help message
-
-    Flags:
-      --date                    Set the date for the command execution (default is today, format is YYYY-MM-DD)
-      --help                    Display this help message
-	`
+Flags:
+  --date              Set the date for the command execution (default is today, format is YYYY-MM-DD)
+  --help              Display this help message`
 }
 
 var (
