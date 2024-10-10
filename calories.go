@@ -155,7 +155,7 @@ func (c *Calories) Stats(date time.Time) string {
 	}
 	sum := c.Sum(date)
 
-	return fmt.Sprintf("[%s]\ncalories: %v\nsum: %d\nleft: %d (target: %d)\n", date.Format(time.DateOnly), calories, sum, c.TargetCalories-sum, c.TargetCalories)
+	return fmt.Sprintf("calories: %v\nsum: %d\nleft: %d (target: %d)\n", calories, sum, c.TargetCalories-sum, c.TargetCalories)
 }
 
 func LoadCalories(path string) (Calories, error) {

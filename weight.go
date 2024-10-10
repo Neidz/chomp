@@ -133,12 +133,12 @@ func (w *Weight) save() error {
 func (w *Weight) Stats(date time.Time) string {
 	weight, ok := w.Data[date]
 	if !ok {
-		return fmt.Sprintf("[%s]\nweight: -\n", date)
+		return fmt.Sprintf("weight: -\n")
 	}
 
 	weeklyChange := w.weeklyChange()
 
-	return fmt.Sprintf("[%s]\nweight: %.1f\nweekly change: %s\n", date.Format(time.DateOnly), weight, weeklyChange)
+	return fmt.Sprintf("weight: %.1f\nweekly change: %s\n", weight, weeklyChange)
 }
 
 func LoadWeight(path string) (Weight, error) {
