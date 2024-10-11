@@ -23,6 +23,8 @@ type application struct {
 	date  time.Time
 	error error
 
+	forms map[string]Form
+
 	screen  string
 	options []string
 	cursor  int
@@ -79,6 +81,8 @@ func initialApp() (application, error) {
 		stats: stats,
 		date:  date,
 		error: nil,
+
+		forms: make(map[string]Form),
 
 		screen:  "mainMenu",
 		options: mainMenuOptions,

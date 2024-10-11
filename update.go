@@ -14,14 +14,8 @@ func (app application) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if app.cursor < len(app.options)-1 {
 				app.cursor++
 			}
-		case "q":
+		case "q", "ctrl+c":
 			return app, tea.Quit
-		case "esc":
-			if app.screen == "caloriesMenu" || app.screen == "weightMenu" || app.screen == "settingsMenu" {
-				app.screen = "mainMenu"
-				app.options = mainMenuOptions
-				app.cursor = 0
-			}
 		default:
 			switch app.screen {
 			case "mainMenu":
@@ -68,18 +62,25 @@ func (app application) handleCaloriesUpdate(key string) (tea.Model, tea.Cmd) {
 			err := app.calories.Delete(app.date)
 			if err != nil {
 				app.error = err
+				return app, nil
 			}
 		case "fill":
 			err := app.calories.Fill(app.date)
 			if err != nil {
 				app.error = err
+				return app, nil
 			}
 		case "pop":
 			err := app.calories.Pop(app.date)
 			if err != nil {
 				app.error = err
+				return app, nil
 			}
 		}
+	case "esc":
+		app.screen = "mainMenu"
+		app.options = mainMenuOptions
+		app.cursor = 0
 	}
 
 	return app, nil
@@ -94,8 +95,13 @@ func (app application) handleWeightUpdate(key string) (tea.Model, tea.Cmd) {
 			err := app.weight.Delete(app.date)
 			if err != nil {
 				app.error = err
+				return app, nil
 			}
 		}
+	case "esc":
+		app.screen = "mainMenu"
+		app.options = mainMenuOptions
+		app.cursor = 0
 	}
 
 	return app, nil
@@ -107,6 +113,10 @@ func (app application) handleSettingsUpdate(key string) (tea.Model, tea.Cmd) {
 		switch app.options[app.cursor] {
 
 		}
+	case "esc":
+		app.screen = "mainMenu"
+		app.options = mainMenuOptions
+		app.cursor = 0
 	}
 
 	return app, nil
