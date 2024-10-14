@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -10,7 +11,9 @@ var weightOptions = []string{"set", "clear"}
 
 type WeightModel struct {
 	services *Services
+	date     *time.Time
 	cursor   int
+	setForm  Form
 }
 
 func (m WeightModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -26,7 +29,40 @@ func (m WeightModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor++
 			}
 		case "esc":
-			return m, SwitchScreen(MainMenuScreen)
+			if m.setForm.Active {
+				m.setForm.Active = false
+			} else {
+				return m, SwitchScreen(MainMenuScreen)
+			}
+		case "enter":
+			switch weightOptions[m.cursor] {
+			case "set":
+				if m.setForm.Active {
+					parsedWeight, err := ParseFormValueToFloat(m.setForm.RawValue)
+					if err != nil {
+						return m, Error(err)
+					}
+					m.services.weight.Set(*m.date, parsedWeight)
+					m.setForm.Reset()
+					return m, RefreshStats()
+				} else {
+					m.setForm.Active = true
+				}
+			case "clear":
+				err := m.services.weight.Delete(*m.date)
+				if err != nil {
+					return m, Error(err)
+				}
+				return m, RefreshStats()
+			}
+		case "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", " ":
+			if m.setForm.Active {
+				m.setForm.AddCharacter(msg.String())
+			}
+		case "backspace":
+			if m.setForm.Active {
+				m.setForm.RemoveCharacter()
+			}
 		}
 	}
 
@@ -34,10 +70,16 @@ func (m WeightModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m WeightModel) View() string {
-	s := ""
+	s := "Weight\n\n"
+	formActive := m.setForm.Active
+
+	if m.setForm.Active {
+		s += fmt.Sprintf("%s (%s)\n>> %s\n\n\n", m.setForm.Title, m.setForm.Description, m.setForm.RawValue)
+	}
+
 	for i, option := range weightOptions {
 		cursor := " "
-		if i == m.cursor {
+		if i == m.cursor && !formActive {
 			cursor = ">"
 		}
 		s += fmt.Sprintf("%s %s\n", cursor, option)
@@ -46,10 +88,15 @@ func (m WeightModel) View() string {
 	return s
 }
 
-func InitialWeightModel(services *Services) WeightModel {
+func InitialWeightModel(services *Services, date *time.Time) WeightModel {
+	setFormTitle := "Set weight"
+	setFormDescription := "provide weight for current day eg. 123.4"
+
 	return WeightModel{
 		services: services,
+		date:     date,
 		cursor:   0,
+		setForm:  NewForm(setFormTitle, setFormDescription),
 	}
 }
 

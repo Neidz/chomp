@@ -43,7 +43,8 @@ func (m MainMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m MainMenuModel) View() string {
-	s := ""
+	s := "Main Menu\n\n"
+
 	for i, option := range mainMenuOptions {
 		cursor := " "
 		if i == m.cursor {

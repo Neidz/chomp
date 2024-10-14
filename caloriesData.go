@@ -96,7 +96,7 @@ func (c *Calories) Delete(date time.Time) error {
 	return c.save()
 }
 
-func (c *Calories) Pop(date time.Time) error {
+func (c *Calories) DeleteLast(date time.Time) error {
 	calories, ok := c.Data[date]
 	if !ok || len(calories) == 0 {
 		return nil
@@ -106,7 +106,7 @@ func (c *Calories) Pop(date time.Time) error {
 	return c.save()
 }
 
-func (c *Calories) Fill(date time.Time) error {
+func (c *Calories) Fill(date time.Time, fillTo int) error {
 	calories, ok := c.Data[date]
 	if !ok {
 		c.Data[date] = []int{}
@@ -114,14 +114,14 @@ func (c *Calories) Fill(date time.Time) error {
 
 	sum := c.Sum(date)
 
-	if sum == c.TargetCalories {
+	if sum == fillTo {
 		return nil
 	}
-	if sum > c.TargetCalories {
+	if sum > fillTo {
 		return fmt.Errorf("can't fill calories to value bigger than current sum")
 	}
 
-	c.Data[date] = append(calories, c.TargetCalories-sum)
+	c.Data[date] = append(calories, fillTo-sum)
 	return c.save()
 }
 

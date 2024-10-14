@@ -9,18 +9,29 @@ import (
 const IntegersFormType = "integersFormType"
 
 type Form struct {
-	Selected bool
-	Type     string
-	Title    string
-	RawValue string
+	Active      bool
+	Title       string
+	Description string
+	RawValue    string
 }
 
-func NewForm(selected bool, formType, title, rawValue string) Form {
-	return Form{Selected: selected, Type: formType, Title: title, RawValue: rawValue}
+func NewForm(title, description string) Form {
+	return Form{Active: false, Title: title, Description: description, RawValue: ""}
+}
+
+func (f *Form) Reset() {
+	f.Active = false
+	f.RawValue = ""
 }
 
 func (f *Form) AddCharacter(char string) {
 	f.RawValue += char
+}
+
+func (f *Form) RemoveCharacter() {
+	if len(f.RawValue) != 0 {
+		f.RawValue = f.RawValue[0 : len(f.RawValue)-1]
+	}
 }
 
 func ParseFormValueToInts(rawValue string) ([]int, error) {
@@ -34,16 +45,33 @@ func ParseFormValueToInts(rawValue string) ([]int, error) {
 	cleanRawValue := strings.ReplaceAll(rawValue, ",", " ")
 	rawNumbers := strings.Fields(cleanRawValue)
 
-	result := make([]int, len(rawNumbers))
+	parsed := make([]int, len(rawNumbers))
 	for i, rawNumber := range rawNumbers {
 		number, err := strconv.Atoi(rawNumber)
 		if err != nil {
-			return nil, fmt.Errorf("form contains invalid number format: %s", rawNumber)
+			return nil, fmt.Errorf("form contains invalid number format, expected '123' or '123, 123' or '123 123' but got: %s", rawNumber)
 		}
-		result[i] = number
+		parsed[i] = number
 	}
 
-	return result, nil
+	return parsed, nil
+}
+
+func ParseFormValueToFloat(rawValue string) (float32, error) {
+	allowedChars := "1234567890.,"
+	valid := containsOnlyAllowedChars(rawValue, allowedChars)
+
+	if !valid {
+		return 0, fmt.Errorf("form contains invalid characters, allowed characters: %s", rawValue)
+	}
+
+	clean := strings.TrimSpace(rawValue)
+	parsed, err := strconv.ParseFloat(clean, 32)
+	if err != nil {
+		return 0, fmt.Errorf("form contains invalid number format, expected '123.4' but got: %s", clean)
+	}
+
+	return float32(parsed), nil
 }
 
 func containsOnlyAllowedChars(str, allowed string) bool {

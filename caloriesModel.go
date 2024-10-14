@@ -2,15 +2,18 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-var caloriesOptions = []string{"add", "clear", "fill", "pop"}
+var caloriesOptions = []string{"add", "clear", "pop", "fill"}
 
 type CaloriesModel struct {
 	services *Services
+	date     *time.Time
 	cursor   int
+	addForm  Form
 }
 
 func (m CaloriesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -26,7 +29,54 @@ func (m CaloriesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor++
 			}
 		case "esc":
-			return m, SwitchScreen(MainMenuScreen)
+			if m.addForm.Active {
+				m.addForm.Active = false
+			} else {
+				return m, SwitchScreen(MainMenuScreen)
+			}
+		case "enter":
+			switch caloriesOptions[m.cursor] {
+			case "add":
+				if m.addForm.Active {
+					parsedCalories, err := ParseFormValueToInts(m.addForm.RawValue)
+					if err != nil {
+						return m, Error(err)
+					}
+					m.services.calories.Add(*m.date, parsedCalories)
+					m.addForm.Reset()
+					return m, RefreshStats()
+				} else {
+					m.addForm.Active = true
+				}
+			case "clear":
+				err := m.services.calories.Delete(*m.date)
+				if err != nil {
+					return m, Error(err)
+				}
+				return m, RefreshStats()
+			case "pop":
+				err := m.services.calories.DeleteLast(*m.date)
+				if err != nil {
+					return m, Error(err)
+				}
+				return m, RefreshStats()
+			case "fill":
+				// temp
+				target := 2000
+				err := m.services.calories.Fill(*m.date, target)
+				if err != nil {
+					return m, Error(err)
+				}
+				return m, RefreshStats()
+			}
+		case "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ",", " ":
+			if m.addForm.Active {
+				m.addForm.AddCharacter(msg.String())
+			}
+		case "backspace":
+			if m.addForm.Active {
+				m.addForm.RemoveCharacter()
+			}
 		}
 	}
 
@@ -34,10 +84,16 @@ func (m CaloriesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m CaloriesModel) View() string {
-	s := ""
+	s := "Calories\n\n"
+	formActive := m.addForm.Active
+
+	if m.addForm.Active {
+		s += fmt.Sprintf("%s (%s)\n>> %s\n\n\n", m.addForm.Title, m.addForm.Description, m.addForm.RawValue)
+	}
+
 	for i, option := range caloriesOptions {
 		cursor := " "
-		if i == m.cursor {
+		if i == m.cursor && !formActive {
 			cursor = ">"
 		}
 		s += fmt.Sprintf("%s %s\n", cursor, option)
@@ -46,10 +102,15 @@ func (m CaloriesModel) View() string {
 	return s
 }
 
-func InitialCaloriesModel(services *Services) CaloriesModel {
+func InitialCaloriesModel(services *Services, date *time.Time) CaloriesModel {
+	addFormTitle := "Add calories"
+	addFormDescription := "provide list of calories, you can provide multiple by separating them with space or ,"
+
 	return CaloriesModel{
 		services: services,
+		date:     date,
 		cursor:   0,
+		addForm:  NewForm(addFormTitle, addFormDescription),
 	}
 }
 

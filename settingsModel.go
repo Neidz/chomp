@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -10,6 +11,7 @@ var settingsOptions = []string{"todo", "also todo"}
 
 type SettingsModel struct {
 	services *Services
+	date     *time.Time
 	cursor   int
 }
 
@@ -34,7 +36,8 @@ func (m SettingsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m SettingsModel) View() string {
-	s := ""
+	s := "Settings\n\n"
+
 	for i, option := range settingsOptions {
 		cursor := " "
 		if i == m.cursor {
@@ -46,9 +49,10 @@ func (m SettingsModel) View() string {
 	return s
 }
 
-func InitialSettingsModel(services *Services) SettingsModel {
+func InitialSettingsModel(services *Services, date *time.Time) SettingsModel {
 	return SettingsModel{
 		services: services,
+		date:     date,
 		cursor:   0,
 	}
 }

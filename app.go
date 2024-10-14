@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -15,6 +17,8 @@ const (
 )
 
 type SwitchScreenMsg int
+type ErrorMsg error
+type RefreshStatsMsg struct{}
 
 type Services struct {
 	calories Calories
@@ -22,8 +26,11 @@ type Services struct {
 }
 
 type Application struct {
-	services     Services
+	services     *Services
 	activeScreen int
+	date         *time.Time
+	stats        string
+	err          error
 
 	mainMenu MainMenuModel
 	calories CaloriesModel
@@ -36,6 +43,13 @@ func (app Application) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case SwitchScreenMsg:
 		app.activeScreen = int(msg)
 		return app, nil
+	case ErrorMsg:
+		app.err = msg
+		return app, nil
+	case RefreshStatsMsg:
+		stats := app.services.calories.Stats(*app.date)
+		stats += app.services.weight.Stats(*app.date)
+		app.stats = stats
 	}
 
 	switch app.activeScreen {
@@ -79,6 +93,13 @@ func (app Application) View() string {
 	case SettingsScreen:
 		s += app.settings.View()
 	}
+
+	if app.err != nil {
+		s += fmt.Sprintf("\n\nError: %s", app.err.Error())
+	}
+
+	s += fmt.Sprintf("\n\n%s", app.stats)
+
 	return s
 }
 
@@ -103,14 +124,21 @@ func InitialApp() (Application, error) {
 		weight:   weightData,
 	}
 
+	date := Today()
+	stats := services.calories.Stats(date)
+	stats += services.weight.Stats(date)
+
 	mainMenuModel := InitialMainMenuModel(&services)
-	caloriesModel := InitialCaloriesModel(&services)
-	weightModel := InitialWeightModel(&services)
-	settingsModel := InitialSettingsModel(&services)
+	caloriesModel := InitialCaloriesModel(&services, &date)
+	weightModel := InitialWeightModel(&services, &date)
+	settingsModel := InitialSettingsModel(&services, &date)
 
 	return Application{
-		services:     services,
+		services:     &services,
 		activeScreen: 0,
+		date:         &date,
+		stats:        stats,
+		err:          nil,
 		mainMenu:     mainMenuModel,
 		calories:     caloriesModel,
 		weight:       weightModel,
@@ -125,5 +153,17 @@ func (app Application) Init() tea.Cmd {
 func SwitchScreen(newScreen int) func() tea.Msg {
 	return func() tea.Msg {
 		return SwitchScreenMsg(newScreen)
+	}
+}
+
+func Error(err error) func() tea.Msg {
+	return func() tea.Msg {
+		return ErrorMsg(err)
+	}
+}
+
+func RefreshStats() func() tea.Msg {
+	return func() tea.Msg {
+		return RefreshStatsMsg{}
 	}
 }
