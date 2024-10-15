@@ -1,213 +1,230 @@
 package main
 
 import (
-	"encoding/json"
+	"database/sql"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 )
 
-type CaloriesData map[time.Time][]int
-
-func (c CaloriesData) MarshalJSON() ([]byte, error) {
-	tmp := make(map[string][]int, len(c))
-	for k, v := range c {
-		tmp[k.Format(time.DateOnly)] = v
-	}
-
-	return json.Marshal(tmp)
+type CaloriesData struct {
+	db *sql.DB
 }
 
-func (c *CaloriesData) UnmarshalJSON(data []byte) error {
-	tmp := make(map[string][]int)
-	if err := json.Unmarshal(data, &tmp); err != nil {
+func (c *CaloriesData) Create(date time.Time, cals []int) error {
+	query := `
+		INSERT INTO calories (date, calories)
+	    VALUES (?1, ?2)`
+	args := []any{date.Format(time.DateOnly), serializeCalories(cals)}
+
+	_, err := c.db.Exec(query, args...)
+	if err != nil {
 		return err
 	}
-
-	parsed := make(CaloriesData)
-	for k, v := range tmp {
-		t, err := time.Parse(time.DateOnly, k)
-		if err != nil {
-			return err
-		}
-		parsed[t] = v
-	}
-	*c = parsed
 
 	return nil
 }
 
-type Calories struct {
-	Path           string       `json:"-"`
-	Data           CaloriesData `json:"data"`
-	TargetCalories int          `json:"target_calories"`
-	Version        int          `json:"version"`
-}
-
-func (c *Calories) Add(date time.Time, toAdd []int) error {
-	calories, ok := c.Data[date]
-	if ok {
-		c.Data[date] = append(calories, toAdd...)
-	} else {
-		c.Data[date] = toAdd
+func (c *CaloriesData) CreateOrAdd(date time.Time, cals []int) error {
+	_, err := c.Read(date)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			err := c.Create(date, cals)
+			if err != nil {
+				return err
+			}
+			return nil
+		default:
+			return err
+		}
 	}
 
-	return c.save()
+	c.add(date, cals)
+
+	return nil
 }
 
-func (c *Calories) SafeAdd(date time.Time, toAdd []int) error {
-	_, ok := c.Data[date]
-	if ok {
-		return ErrDateRecordAlreadyExists
-	} else {
-		c.Data[date] = toAdd
+func (c *CaloriesData) Read(date time.Time) ([]int, error) {
+	query := `
+		SELECT calories
+		FROM calories
+		WHERE date = ?1`
+	args := []any{date.Format(time.DateOnly)}
+
+	var sCals string
+	err := c.db.QueryRow(query, args...).Scan(&sCals)
+	if err != nil {
+		return nil, err
+	}
+	cals, err := deserializeCalories(sCals)
+	if err != nil {
+		return nil, err
 	}
 
-	return c.save()
+	return cals, nil
 }
 
-func (c *Calories) Sum(date time.Time) int {
-	calories, ok := c.Data[date]
-	if !ok {
-		return 0
+func (c *CaloriesData) Update(date time.Time, cals []int) error {
+	query := `
+		UPDATE calories
+		SET calories = ?1
+		WHERE date = ?2`
+	args := []any{serializeCalories(cals), date.Format(time.DateOnly)}
+
+	_, err := c.db.Exec(query, args...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *CaloriesData) Delete(date time.Time) error {
+	query := `
+		DELETE FROM calories
+		WHERE date = ?1`
+	args := []any{date.Format(time.DateOnly)}
+
+	_, err := c.db.Exec(query, args...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *CaloriesData) Sum(date time.Time) (int, error) {
+	cals, err := c.Read(date)
+	if err != nil {
+		return 0, err
 	}
 
 	sum := 0
-	for _, val := range calories {
+	for _, val := range cals {
 		sum += val
 	}
 
-	return sum
+	return sum, nil
 }
 
-func (c *Calories) List(date time.Time) []int {
-	calories, ok := c.Data[date]
-	if !ok {
-		return make([]int, 0)
-	}
-
-	return calories
-}
-
-func (c *Calories) Delete(date time.Time) error {
-	delete(c.Data, date)
-	return c.save()
-}
-
-func (c *Calories) DeleteLast(date time.Time) error {
-	calories, ok := c.Data[date]
-	if !ok || len(calories) == 0 {
-		return nil
-	}
-
-	c.Data[date] = calories[:len(calories)-1]
-	return c.save()
-}
-
-func (c *Calories) Fill(date time.Time, fillTo int) error {
-	calories, ok := c.Data[date]
-	if !ok {
-		c.Data[date] = []int{}
-	}
-
-	sum := c.Sum(date)
-
-	if sum == fillTo {
-		return nil
-	}
-	if sum > fillTo {
-		return fmt.Errorf("can't fill calories to value bigger than current sum")
-	}
-
-	c.Data[date] = append(calories, fillTo-sum)
-	return c.save()
-}
-
-func (c *Calories) GetTarget() int {
-	return c.TargetCalories
-}
-
-func (c *Calories) SetTarget(target int) error {
-	c.TargetCalories = target
-	return c.save()
-}
-
-func (c *Calories) save() error {
-	bytes, err := json.MarshalIndent(c, "", "  ")
+func (c *CaloriesData) SafeDeleteLastElement(date time.Time) error {
+	calls, err := c.Read(date)
 	if err != nil {
-		return fmt.Errorf("failed to marshal calories data to json: %w", err)
-	}
-
-	err = os.WriteFile(c.Path, bytes, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to save calories data to file: %w", err)
-	}
-
-	return nil
-}
-
-func (c *Calories) Stats(date time.Time) string {
-	calories, ok := c.Data[date]
-	if !ok {
-		calories = make([]int, 0)
-	}
-	sum := c.Sum(date)
-
-	return fmt.Sprintf("calories: %v\nsum: %d\nleft: %d (target: %d)\n", calories, sum, c.TargetCalories-sum, c.TargetCalories)
-}
-
-func LoadCalories(path string) (Calories, error) {
-	_, err := os.Stat(path)
-	if errors.Is(err, os.ErrNotExist) {
-		err = createDefaultCalories(path)
-		if err != nil {
-			return Calories{}, fmt.Errorf("failed to create default calories data: %w", err)
+		switch err {
+		case sql.ErrNoRows:
+			return nil
+		default:
+			return err
 		}
-		fmt.Println("calories data not found, creating default")
-	} else if err != nil {
-		return Calories{}, err
 	}
 
-	data, err := openCalories(path)
-	if err != nil {
-		return Calories{}, fmt.Errorf("failed to open calories data: %w", err)
+	if len(calls) == 0 {
+		return nil
 	}
 
-	data.Path = path
-
-	return data, nil
-}
-
-func openCalories(path string) (Calories, error) {
-	bytes, err := os.ReadFile(path)
-	if err != nil {
-		return Calories{}, err
+	if len(calls) == 1 {
+		err := c.Delete(date)
+		if err != nil {
+			return err
+		}
+		return nil
 	}
 
-	var calories Calories
-	err = json.Unmarshal(bytes, &calories)
-	if err != nil {
-		return Calories{}, err
-	}
-
-	return calories, nil
-}
-
-func createDefaultCalories(path string) error {
-	err := os.MkdirAll(filepath.Dir(path), 0755)
+	err = c.Update(date, calls[:len(calls)-1])
 	if err != nil {
 		return err
 	}
 
-	calories := Calories{
-		Data:           make(map[time.Time][]int),
-		Path:           path,
-		TargetCalories: 0,
-		Version:        1,
+	return nil
+}
+
+func (c *CaloriesData) Fill(date time.Time, fillTo int) error {
+	calsSum, err := c.Sum(date)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			err := c.Create(date, []int{fillTo})
+			if err != nil {
+				return err
+			}
+		default:
+			return err
+		}
 	}
-	calories.save()
+
+	if calsSum == fillTo {
+		return nil
+	}
+	if calsSum > fillTo {
+		return errors.New("can't fill calories to value bigger than current sum")
+	}
+
+	err = c.add(date, []int{fillTo - calsSum})
+	if err != nil {
+		return err
+	}
 
 	return nil
+}
+
+func (c *CaloriesData) Stats(date time.Time, targetCals int) (string, error) {
+	cals, err := c.Read(date)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			cals = make([]int, 0)
+		default:
+			return "", err
+		}
+	}
+	sum, err := c.Sum(date)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			sum = 0
+		default:
+			return "", err
+		}
+	}
+
+	return fmt.Sprintf("calories: %v\nsum: %d\nleft: %d (target: %d)\n", cals, sum, targetCals-sum, targetCals), nil
+}
+
+func (c *CaloriesData) add(date time.Time, cals []int) error {
+	newCalls, err := c.Read(date)
+	if err != nil {
+		return err
+	}
+	newCalls = append(newCalls, cals...)
+
+	err = c.Update(date, newCalls)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func serializeCalories(cals []int) string {
+	sCals := make([]string, len(cals))
+	for i, cal := range cals {
+		sCals[i] = strconv.Itoa(cal)
+	}
+	return strings.Join(sCals, ",")
+}
+
+func deserializeCalories(sCals string) ([]int, error) {
+	split := strings.Split(sCals, ",")
+	cals := make([]int, len(split))
+	for i, cal := range split {
+		parsed, err := strconv.Atoi(cal)
+		if err != nil {
+			return nil, err
+		}
+		cals[i] = parsed
+	}
+	return cals, nil
 }

@@ -62,7 +62,7 @@ func (w *Weight) Set(date time.Time, weight float32) error {
 func (w *Weight) SafeSet(date time.Time, weight float32) error {
 	_, ok := w.Data[date]
 	if ok {
-		return ErrDateRecordAlreadyExists
+		return errors.New("not found")
 	} else {
 		w.Data[date] = weight
 	}

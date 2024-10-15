@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -18,7 +17,13 @@ func main() {
 }
 
 func tui() error {
-	app, err := InitialApp()
+	db, err := PrepareDb()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	app, err := InitialApp(db)
 	if err != nil {
 		return err
 	}
@@ -39,7 +44,3 @@ func Today() time.Time {
 
 	return today
 }
-
-var (
-	ErrDateRecordAlreadyExists = errors.New("record for this date already exists")
-)

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -21,8 +22,9 @@ type ErrorMsg error
 type RefreshStatsMsg struct{}
 
 type Services struct {
-	calories Calories
+	calories CaloriesData
 	weight   Weight
+	settings SettingsData
 }
 
 type Application struct {
@@ -47,7 +49,14 @@ func (app Application) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		app.err = msg
 		return app, nil
 	case RefreshStatsMsg:
-		stats := app.services.calories.Stats(*app.date)
+		targetCals, err := app.services.settings.ReadTargetCalories()
+		if err != nil {
+			return app, Error(err)
+		}
+		stats, err := app.services.calories.Stats(*app.date, targetCals)
+		if err != nil {
+			return app, Error(err)
+		}
 		stats += app.services.weight.Stats(*app.date)
 		app.stats = stats
 	}
@@ -103,16 +112,9 @@ func (app Application) View() string {
 	return s
 }
 
-func InitialApp() (Application, error) {
+func InitialApp(db *sql.DB) (Application, error) {
 	homeDir, err := os.UserHomeDir()
-
-	caloriesDataPath := filepath.Join(homeDir, ".local/share/chomp/calories-testing.json")
 	weightDataPath := filepath.Join(homeDir, ".local/share/chomp/weight-testing.json")
-
-	caloriesData, err := LoadCalories(caloriesDataPath)
-	if err != nil {
-		return Application{}, err
-	}
 
 	weightData, err := LoadWeight(weightDataPath)
 	if err != nil {
@@ -120,12 +122,24 @@ func InitialApp() (Application, error) {
 	}
 
 	services := Services{
-		calories: caloriesData,
-		weight:   weightData,
+		calories: CaloriesData{
+			db: db,
+		},
+		weight: weightData,
+		settings: SettingsData{
+			db: db,
+		},
 	}
 
 	date := Today()
-	stats := services.calories.Stats(date)
+	targetCals, err := services.settings.ReadTargetCalories()
+	if err != nil {
+		return Application{}, err
+	}
+	stats, err := services.calories.Stats(date, targetCals)
+	if err != nil {
+		return Application{}, err
+	}
 	stats += services.weight.Stats(date)
 
 	mainMenuModel := InitialMainMenuModel(&services)

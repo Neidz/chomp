@@ -42,7 +42,10 @@ func (m CaloriesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if err != nil {
 						return m, Error(err)
 					}
-					m.services.calories.Add(*m.date, parsedCalories)
+					err = m.services.calories.CreateOrAdd(*m.date, parsedCalories)
+					if err != nil {
+						return m, Error(err)
+					}
 					m.addForm.Reset()
 					return m, RefreshStats()
 				} else {
@@ -55,15 +58,17 @@ func (m CaloriesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				return m, RefreshStats()
 			case "pop":
-				err := m.services.calories.DeleteLast(*m.date)
+				err := m.services.calories.SafeDeleteLastElement(*m.date)
 				if err != nil {
 					return m, Error(err)
 				}
 				return m, RefreshStats()
 			case "fill":
-				// temp
-				target := 2000
-				err := m.services.calories.Fill(*m.date, target)
+				targetCalls, err := m.services.settings.ReadTargetCalories()
+				if err != nil {
+					return m, Error(err)
+				}
+				err = m.services.calories.Fill(*m.date, targetCalls)
 				if err != nil {
 					return m, Error(err)
 				}
