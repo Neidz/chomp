@@ -42,7 +42,7 @@ func (m WeightModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if err != nil {
 						return m, Error(err)
 					}
-					m.services.weight.Set(*m.date, parsedWeight)
+					m.services.weight.CreateOrUpdate(*m.date, parsedWeight)
 					m.setForm.Reset()
 					return m, RefreshStats()
 				} else {

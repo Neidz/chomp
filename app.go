@@ -3,8 +3,6 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"os"
-	"path/filepath"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -23,7 +21,7 @@ type RefreshStatsMsg struct{}
 
 type Services struct {
 	calories CaloriesData
-	weight   Weight
+	weight   WeightData
 	settings SettingsData
 }
 
@@ -57,7 +55,11 @@ func (app Application) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if err != nil {
 			return app, Error(err)
 		}
-		stats += app.services.weight.Stats(*app.date)
+		weightStats, err := app.services.weight.Stats(*app.date)
+		if err != nil {
+			return app, Error(err)
+		}
+		stats += weightStats
 		app.stats = stats
 	}
 
@@ -113,19 +115,13 @@ func (app Application) View() string {
 }
 
 func InitialApp(db *sql.DB) (Application, error) {
-	homeDir, err := os.UserHomeDir()
-	weightDataPath := filepath.Join(homeDir, ".local/share/chomp/weight-testing.json")
-
-	weightData, err := LoadWeight(weightDataPath)
-	if err != nil {
-		return Application{}, err
-	}
-
 	services := Services{
 		calories: CaloriesData{
 			db: db,
 		},
-		weight: weightData,
+		weight: WeightData{
+			db: db,
+		},
 		settings: SettingsData{
 			db: db,
 		},
@@ -136,11 +132,16 @@ func InitialApp(db *sql.DB) (Application, error) {
 	if err != nil {
 		return Application{}, err
 	}
+
 	stats, err := services.calories.Stats(date, targetCals)
 	if err != nil {
 		return Application{}, err
 	}
-	stats += services.weight.Stats(date)
+	weightStats, err := services.weight.Stats(date)
+	if err != nil {
+		return Application{}, err
+	}
+	stats += weightStats
 
 	mainMenuModel := InitialMainMenuModel(&services)
 	caloriesModel := InitialCaloriesModel(&services, &date)
