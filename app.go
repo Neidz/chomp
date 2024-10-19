@@ -13,9 +13,11 @@ const (
 	CaloriesScreen
 	WeightScreen
 	SettingsScreen
+	ImportDataScreen
 )
 
 type SwitchScreenMsg int
+type InformationMsg string
 type ErrorMsg error
 type RefreshStatsMsg struct{}
 
@@ -30,18 +32,26 @@ type Application struct {
 	activeScreen int
 	date         *time.Time
 	stats        string
+	info         *string
 	err          error
 
-	mainMenu MainMenuModel
-	calories CaloriesModel
-	weight   WeightModel
-	settings SettingsModel
+	mainMenu   MainMenuModel
+	calories   CaloriesModel
+	weight     WeightModel
+	settings   SettingsModel
+	importData ImportDataModel
 }
 
 func (app Application) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case SwitchScreenMsg:
+		app.err = nil
+		app.info = nil
 		app.activeScreen = int(msg)
+		return app, nil
+	case InformationMsg:
+		msgInfo := string(msg)
+		app.info = &msgInfo
 		return app, nil
 	case ErrorMsg:
 		app.err = msg
@@ -61,6 +71,19 @@ func (app Application) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		stats += weightStats
 		app.stats = stats
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "left":
+			prevDate := app.date.AddDate(0, 0, -1)
+			app.date = &prevDate
+			return app, RefreshStats()
+		case "right":
+			nextDay := app.date.AddDate(0, 0, 1)
+			if !nextDay.After(Today()) {
+				app.date = &nextDay
+				return app, RefreshStats()
+			}
+		}
 	}
 
 	switch app.activeScreen {
@@ -88,12 +111,18 @@ func (app Application) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			app.settings = settingsModel
 			return app, cmd
 		}
+	case ImportDataScreen:
+		m, cmd := app.importData.Update(msg)
+		if importDataModel, ok := m.(ImportDataModel); ok {
+			app.importData = importDataModel
+			return app, cmd
+		}
 	}
 	return app, nil
 }
 
 func (app Application) View() string {
-	s := ""
+	s := fmt.Sprintf("[%s]\n", app.date.Format(time.DateOnly))
 	switch app.activeScreen {
 	case MainMenuScreen:
 		s += app.mainMenu.View()
@@ -103,10 +132,16 @@ func (app Application) View() string {
 		s += app.weight.View()
 	case SettingsScreen:
 		s += app.settings.View()
+	case ImportDataScreen:
+		s += app.importData.View()
+	}
+
+	if app.info != nil {
+		s += fmt.Sprintf("\n\nInfo:\n%s", *app.info)
 	}
 
 	if app.err != nil {
-		s += fmt.Sprintf("\n\nError: %s", app.err.Error())
+		s += fmt.Sprintf("\n\nError:\n%s", app.err.Error())
 	}
 
 	s += fmt.Sprintf("\n\n%s", app.stats)
@@ -147,17 +182,20 @@ func InitialApp(db *sql.DB) (Application, error) {
 	caloriesModel := InitialCaloriesModel(&services, &date)
 	weightModel := InitialWeightModel(&services, &date)
 	settingsModel := InitialSettingsModel(&services, &date)
+	importDataModel := InitialImportDataModel(&services, &date)
 
 	return Application{
 		services:     &services,
 		activeScreen: 0,
 		date:         &date,
 		stats:        stats,
+		info:         nil,
 		err:          nil,
 		mainMenu:     mainMenuModel,
 		calories:     caloriesModel,
 		weight:       weightModel,
 		settings:     settingsModel,
+		importData:   importDataModel,
 	}, nil
 }
 
@@ -168,6 +206,12 @@ func (app Application) Init() tea.Cmd {
 func SwitchScreen(newScreen int) func() tea.Msg {
 	return func() tea.Msg {
 		return SwitchScreenMsg(newScreen)
+	}
+}
+
+func ShowInformation(information string) func() tea.Msg {
+	return func() tea.Msg {
+		return InformationMsg(information)
 	}
 }
 

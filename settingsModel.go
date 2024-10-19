@@ -7,12 +7,13 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-var settingsOptions = []string{"todo", "also todo"}
+var settingsOptions = []string{"set target calories"}
 
 type SettingsModel struct {
-	services *Services
-	date     *time.Time
-	cursor   int
+	services              *Services
+	date                  *time.Time
+	cursor                int
+	setTargetCaloriesForm Form
 }
 
 func (m SettingsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -29,6 +30,32 @@ func (m SettingsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "esc":
 			return m, SwitchScreen(MainMenuScreen)
+		case "enter":
+			switch settingsOptions[m.cursor] {
+			case "set target calories":
+				if m.setTargetCaloriesForm.Active {
+					targetCals, err := ParseFormValueToInt(m.setTargetCaloriesForm.RawValue)
+					if err != nil {
+						return m, Error(err)
+					}
+					err = m.services.settings.UpdateTargetCalories(targetCals)
+					if err != nil {
+						return m, Error(err)
+					}
+					m.setTargetCaloriesForm.Reset()
+					return m, RefreshStats()
+				} else {
+					m.setTargetCaloriesForm.Active = true
+				}
+			}
+		case "0", "1", "2", "3", "4", "5", "6", "7", "8", "9":
+			if m.setTargetCaloriesForm.Active {
+				m.setTargetCaloriesForm.AddCharacter(msg.String())
+			}
+		case "backspace":
+			if m.setTargetCaloriesForm.Active {
+				m.setTargetCaloriesForm.RemoveCharacter()
+			}
 		}
 	}
 
@@ -37,10 +64,15 @@ func (m SettingsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m SettingsModel) View() string {
 	s := "Settings\n\n"
+	formActive := m.setTargetCaloriesForm.Active
+
+	if m.setTargetCaloriesForm.Active {
+		s += fmt.Sprintf("%s (%s)\n>> %s\n\n\n", m.setTargetCaloriesForm.Title, m.setTargetCaloriesForm.Description, m.setTargetCaloriesForm.RawValue)
+	}
 
 	for i, option := range settingsOptions {
 		cursor := " "
-		if i == m.cursor {
+		if i == m.cursor && !formActive {
 			cursor = ">"
 		}
 		s += fmt.Sprintf("%s %s\n", cursor, option)
@@ -50,10 +82,14 @@ func (m SettingsModel) View() string {
 }
 
 func InitialSettingsModel(services *Services, date *time.Time) SettingsModel {
+	setTargetCaloriesFormTitle := "Target calories"
+	setTargetCaloriesFormDescription := "provide your new target for daily calorie intake"
+
 	return SettingsModel{
-		services: services,
-		date:     date,
-		cursor:   0,
+		services:              services,
+		date:                  date,
+		cursor:                0,
+		setTargetCaloriesForm: NewForm(setTargetCaloriesFormTitle, setTargetCaloriesFormDescription),
 	}
 }
 

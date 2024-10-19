@@ -6,7 +6,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-var mainMenuOptions = []string{"calories", "weight", "settings"}
+var mainMenuOptions = []string{"calories", "weight", "settings", "import data"}
 
 type MainMenuModel struct {
 	services *Services
@@ -35,6 +35,8 @@ func (m MainMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, SwitchScreen(WeightScreen)
 			case "settings":
 				return m, SwitchScreen(SettingsScreen)
+			case "import data":
+				return m, SwitchScreen(ImportDataScreen)
 			}
 		}
 	}

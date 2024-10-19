@@ -65,13 +65,28 @@ func ParseFormValueToFloat(rawValue string) (float32, error) {
 		return 0, fmt.Errorf("form contains invalid characters, allowed characters: %s", rawValue)
 	}
 
-	clean := strings.TrimSpace(rawValue)
-	parsed, err := strconv.ParseFloat(clean, 32)
+	parsed, err := strconv.ParseFloat(rawValue, 32)
 	if err != nil {
-		return 0, fmt.Errorf("form contains invalid number format, expected '123.4' but got: %s", clean)
+		return 0, fmt.Errorf("form contains invalid number format, expected '123.4' but got: %s", rawValue)
 	}
 
 	return float32(parsed), nil
+}
+
+func ParseFormValueToInt(rawValue string) (int, error) {
+	allowedChars := "1234567890"
+	valid := containsOnlyAllowedChars(rawValue, allowedChars)
+
+	if !valid {
+		return 0, fmt.Errorf("form contains invalid characters, allowed characters: %s", rawValue)
+	}
+
+	parsed, err := strconv.Atoi(rawValue)
+	if err != nil {
+		return 0, fmt.Errorf("form contains invalid number format, expected '1234' but got: %s", rawValue)
+	}
+
+	return parsed, nil
 }
 
 func containsOnlyAllowedChars(str, allowed string) bool {

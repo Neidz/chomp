@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -44,3 +45,7 @@ func Today() time.Time {
 
 	return today
 }
+
+var (
+	ErrDateRecordAlreadyExists = errors.New("record for this date already exists")
+)

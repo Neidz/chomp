@@ -27,6 +27,24 @@ func (c *CaloriesData) Create(date time.Time, cals []int) error {
 	return nil
 }
 
+func (c *CaloriesData) SafeCreate(date time.Time, cals []int) error {
+	_, err := c.Read(date)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			err := c.Create(date, cals)
+			if err != nil {
+				return err
+			}
+			return nil
+		default:
+			return err
+		}
+	}
+
+	return ErrDateRecordAlreadyExists
+}
+
 func (c *CaloriesData) CreateOrAdd(date time.Time, cals []int) error {
 	_, err := c.Read(date)
 	if err != nil {
@@ -150,6 +168,7 @@ func (c *CaloriesData) Fill(date time.Time, fillTo int) error {
 			if err != nil {
 				return err
 			}
+			return nil
 		default:
 			return err
 		}

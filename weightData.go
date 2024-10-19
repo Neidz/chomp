@@ -24,6 +24,24 @@ func (w *WeightData) Create(date time.Time, weight float32) error {
 	return nil
 }
 
+func (w *WeightData) SafeCreate(date time.Time, weight float32) error {
+	_, err := w.Read(date)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			err := w.Create(date, weight)
+			if err != nil {
+				return err
+			}
+			return nil
+		default:
+			return err
+		}
+	}
+
+	return ErrDateRecordAlreadyExists
+}
+
 func (w *WeightData) CreateOrUpdate(date time.Time, weight float32) error {
 	_, err := w.Read(date)
 	if err != nil {
