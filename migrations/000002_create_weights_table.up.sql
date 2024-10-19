@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS weights (
+    date TEXT PRIMARY KEY,
+    weight REAL NOT NULL
+)
