@@ -114,7 +114,7 @@ func (w *WeightData) Stats(date time.Time) (string, error) {
 	if err != nil {
 		switch err {
 		case sql.ErrNoRows:
-			weight = 0
+			return "weight: -\n\n", nil
 		default:
 			return "", err
 		}

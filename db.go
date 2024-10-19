@@ -3,21 +3,36 @@ package main
 import (
 	"context"
 	"database/sql"
+	"embed"
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/sqlite3"
-	"github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
 	_ "github.com/mattn/go-sqlite3"
 )
 
+//go:embed migrations/*
+var migrations embed.FS
+
 func PrepareDb() (*sql.DB, error) {
 	homeDir, err := os.UserHomeDir()
-	dbSource := filepath.Join(homeDir, ".local/share/chomp/data.db")
-	migrationsSource, err := (&file.File{}).Open("./migrations")
+	if err != nil {
+		return nil, errors.New("failed to get user's home directory")
+	}
+
+	var dbSource string
+	if runtime.GOOS == "windows" {
+		dbSource = filepath.Join(homeDir, "AppData", "Roaming", "chomp", "data.db")
+	} else {
+		dbSource = filepath.Join(homeDir, ".local", "share", "chomp", "data.db")
+	}
+
+	migrationsSource, err := iofs.New(migrations, "migrations")
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +57,7 @@ func PrepareDb() (*sql.DB, error) {
 	}
 
 	m, err := migrate.NewWithInstance(
-		"file", migrationsSource, "sqlite3", driver)
+		"iofs", migrationsSource, "sqlite3", driver)
 	if err != nil {
 		return nil, err
 	}
