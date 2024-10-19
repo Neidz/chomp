@@ -30,7 +30,7 @@ func (m CaloriesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "esc":
 			if m.addForm.Active {
-				m.addForm.Active = false
+				m.addForm.Reset()
 			} else {
 				return m, SwitchScreen(MainMenuScreen)
 			}

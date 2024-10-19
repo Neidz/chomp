@@ -29,7 +29,11 @@ func (m ImportDataModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor++
 			}
 		case "esc":
-			return m, SwitchScreen(MainMenuScreen)
+			if m.fitnotesDataForm.Active {
+				m.fitnotesDataForm.Reset()
+			} else {
+				return m, SwitchScreen(MainMenuScreen)
+			}
 		case "enter":
 			switch importOptions[m.cursor] {
 			case "import fitnotes data":
@@ -114,7 +118,7 @@ func (m ImportDataModel) View() string {
 
 func InitialImportDataModel(services *Services, date *time.Time) ImportDataModel {
 	fitnotesDataFormTitle := "Fitnotes path"
-	fitnotesDataFormDescription := "provide path to file exported from fitnotes"
+	fitnotesDataFormDescription := "provide absolute path to the file exported from fitnotes"
 
 	return ImportDataModel{
 		services:         services,

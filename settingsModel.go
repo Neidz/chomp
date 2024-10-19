@@ -29,7 +29,11 @@ func (m SettingsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor++
 			}
 		case "esc":
-			return m, SwitchScreen(MainMenuScreen)
+			if m.setTargetCaloriesForm.Active {
+				m.setTargetCaloriesForm.Reset()
+			} else {
+				return m, SwitchScreen(MainMenuScreen)
+			}
 		case "enter":
 			switch settingsOptions[m.cursor] {
 			case "set target calories":

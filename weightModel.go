@@ -30,7 +30,7 @@ func (m WeightModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "esc":
 			if m.setForm.Active {
-				m.setForm.Active = false
+				m.setForm.Reset()
 			} else {
 				return m, SwitchScreen(MainMenuScreen)
 			}
