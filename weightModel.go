@@ -11,7 +11,7 @@ var weightOptions = []string{"set", "clear"}
 
 type WeightModel struct {
 	services *Services
-	date     *time.Time
+	date     time.Time
 	cursor   int
 	setForm  Form
 }
@@ -42,14 +42,14 @@ func (m WeightModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if err != nil {
 						return m, Error(err)
 					}
-					m.services.weight.CreateOrUpdate(*m.date, parsedWeight)
+					m.services.weight.CreateOrUpdate(m.date, parsedWeight)
 					m.setForm.Reset()
 					return m, RefreshStats()
 				} else {
 					m.setForm.Active = true
 				}
 			case "clear":
-				err := m.services.weight.Delete(*m.date)
+				err := m.services.weight.Delete(m.date)
 				if err != nil {
 					return m, Error(err)
 				}
@@ -88,7 +88,7 @@ func (m WeightModel) View() string {
 	return s
 }
 
-func InitialWeightModel(services *Services, date *time.Time) WeightModel {
+func InitialWeightModel(services *Services, date time.Time) WeightModel {
 	setFormTitle := "Set weight"
 	setFormDescription := "provide weight for current day eg. 123.4"
 

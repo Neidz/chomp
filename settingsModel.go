@@ -11,7 +11,7 @@ var settingsOptions = []string{"set target calories"}
 
 type SettingsModel struct {
 	services              *Services
-	date                  *time.Time
+	date                  time.Time
 	cursor                int
 	setTargetCaloriesForm Form
 }
@@ -85,7 +85,7 @@ func (m SettingsModel) View() string {
 	return s
 }
 
-func InitialSettingsModel(services *Services, date *time.Time) SettingsModel {
+func InitialSettingsModel(services *Services, date time.Time) SettingsModel {
 	setTargetCaloriesFormTitle := "Target calories"
 	setTargetCaloriesFormDescription := "provide your new target for daily calorie intake"
 

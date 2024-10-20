@@ -48,4 +48,5 @@ func Today() time.Time {
 
 var (
 	ErrDateRecordAlreadyExists = errors.New("record for this date already exists")
+	ErrDateRangeNoWeightData   = errors.New("there are no records for provided date range")
 )

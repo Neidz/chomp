@@ -11,7 +11,7 @@ var caloriesOptions = []string{"add", "clear", "pop", "fill"}
 
 type CaloriesModel struct {
 	services *Services
-	date     *time.Time
+	date     time.Time
 	cursor   int
 	addForm  Form
 }
@@ -42,7 +42,7 @@ func (m CaloriesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if err != nil {
 						return m, Error(err)
 					}
-					err = m.services.calories.CreateOrAdd(*m.date, parsedCalories)
+					err = m.services.calories.CreateOrAdd(m.date, parsedCalories)
 					if err != nil {
 						return m, Error(err)
 					}
@@ -52,13 +52,13 @@ func (m CaloriesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.addForm.Active = true
 				}
 			case "clear":
-				err := m.services.calories.Delete(*m.date)
+				err := m.services.calories.Delete(m.date)
 				if err != nil {
 					return m, Error(err)
 				}
 				return m, RefreshStats()
 			case "pop":
-				err := m.services.calories.SafeDeleteLastElement(*m.date)
+				err := m.services.calories.SafeDeleteLastElement(m.date)
 				if err != nil {
 					return m, Error(err)
 				}
@@ -68,7 +68,7 @@ func (m CaloriesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if err != nil {
 					return m, Error(err)
 				}
-				err = m.services.calories.Fill(*m.date, targetCalls)
+				err = m.services.calories.Fill(m.date, targetCalls)
 				if err != nil {
 					return m, Error(err)
 				}
@@ -107,7 +107,7 @@ func (m CaloriesModel) View() string {
 	return s
 }
 
-func InitialCaloriesModel(services *Services, date *time.Time) CaloriesModel {
+func InitialCaloriesModel(services *Services, date time.Time) CaloriesModel {
 	addFormTitle := "Add calories"
 	addFormDescription := "provide list of calories, you can provide multiple by separating them with space or ,"
 

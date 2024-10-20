@@ -30,7 +30,7 @@ type Services struct {
 type Application struct {
 	services     *Services
 	activeScreen int
-	date         *time.Time
+	date         time.Time
 	stats        string
 	info         *string
 	err          error
@@ -57,30 +57,31 @@ func (app Application) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		app.err = msg
 		return app, nil
 	case RefreshStatsMsg:
-		targetCals, err := app.services.settings.ReadTargetCalories()
+		stats, err := stats(app.services, app.date)
 		if err != nil {
 			return app, Error(err)
 		}
-		stats, err := app.services.calories.Stats(*app.date, targetCals)
-		if err != nil {
-			return app, Error(err)
-		}
-		weightStats, err := app.services.weight.Stats(*app.date)
-		if err != nil {
-			return app, Error(err)
-		}
-		stats += weightStats
 		app.stats = stats
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "left":
-			prevDate := app.date.AddDate(0, 0, -1)
-			app.date = &prevDate
+			prevDay := app.date.AddDate(0, 0, -1)
+			app.date = prevDay
+			app.calories.date = prevDay
+			app.weight.date = prevDay
+			app.settings.date = prevDay
+			app.importData.date = prevDay
+
 			return app, RefreshStats()
 		case "right":
 			nextDay := app.date.AddDate(0, 0, 1)
 			if !nextDay.After(Today()) {
-				app.date = &nextDay
+				app.date = nextDay
+				app.calories.date = nextDay
+				app.weight.date = nextDay
+				app.settings.date = nextDay
+				app.importData.date = nextDay
+
 				return app, RefreshStats()
 			}
 		}
@@ -163,31 +164,21 @@ func InitialApp(db *sql.DB) (Application, error) {
 	}
 
 	date := Today()
-	targetCals, err := services.settings.ReadTargetCalories()
+	stats, err := stats(&services, date)
 	if err != nil {
 		return Application{}, err
 	}
-
-	stats, err := services.calories.Stats(date, targetCals)
-	if err != nil {
-		return Application{}, err
-	}
-	weightStats, err := services.weight.Stats(date)
-	if err != nil {
-		return Application{}, err
-	}
-	stats += weightStats
 
 	mainMenuModel := InitialMainMenuModel(&services)
-	caloriesModel := InitialCaloriesModel(&services, &date)
-	weightModel := InitialWeightModel(&services, &date)
-	settingsModel := InitialSettingsModel(&services, &date)
-	importDataModel := InitialImportDataModel(&services, &date)
+	caloriesModel := InitialCaloriesModel(&services, date)
+	weightModel := InitialWeightModel(&services, date)
+	settingsModel := InitialSettingsModel(&services, date)
+	importDataModel := InitialImportDataModel(&services, date)
 
 	return Application{
 		services:     &services,
 		activeScreen: 0,
-		date:         &date,
+		date:         date,
 		stats:        stats,
 		info:         nil,
 		err:          nil,
@@ -225,4 +216,29 @@ func RefreshStats() func() tea.Msg {
 	return func() tea.Msg {
 		return RefreshStatsMsg{}
 	}
+}
+
+func stats(services *Services, date time.Time) (string, error) {
+	targetCals, err := services.settings.ReadTargetCalories()
+	if err != nil {
+		return "", err
+	}
+	caloriesStats, err := services.calories.Stats(date, targetCals)
+	if err != nil {
+		return "", err
+	}
+	weightStats, err := services.weight.Stats(date)
+	if err != nil {
+		return "", err
+	}
+	weeklyChange, err := services.weight.WeeklyChange(date)
+	if err != nil {
+		return "", err
+	}
+
+	stats := ""
+	stats += fmt.Sprintf("Calories\n%s\n\n", caloriesStats)
+	stats += fmt.Sprintf("Weight\n%s\n%s\n", weightStats, weeklyChange)
+
+	return stats, nil
 }

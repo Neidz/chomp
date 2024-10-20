@@ -209,7 +209,7 @@ func (c *CaloriesData) Stats(date time.Time, targetCals int) (string, error) {
 		}
 	}
 
-	return fmt.Sprintf("calories: %v\nsum: %d\nleft: %d (target: %d)\n", cals, sum, targetCals-sum, targetCals), nil
+	return fmt.Sprintf("list: %v\nsum: %d\nleft: %d (target: %d)", cals, sum, targetCals-sum, targetCals), nil
 }
 
 func (c *CaloriesData) add(date time.Time, cals []int) error {

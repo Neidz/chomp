@@ -11,7 +11,7 @@ var importOptions = []string{"import fitnotes data"}
 
 type ImportDataModel struct {
 	services         *Services
-	date             *time.Time
+	date             time.Time
 	cursor           int
 	fitnotesDataForm Form
 }
@@ -116,7 +116,7 @@ func (m ImportDataModel) View() string {
 	return s
 }
 
-func InitialImportDataModel(services *Services, date *time.Time) ImportDataModel {
+func InitialImportDataModel(services *Services, date time.Time) ImportDataModel {
 	fitnotesDataFormTitle := "Fitnotes path"
 	fitnotesDataFormDescription := "provide absolute path to the file exported from fitnotes"
 
