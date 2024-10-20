@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -19,6 +18,7 @@ const (
 type SwitchScreenMsg int
 type InformationMsg string
 type ErrorMsg error
+type ClearErrorMsg struct{}
 type RefreshStatsMsg struct{}
 
 type Services struct {
@@ -56,12 +56,19 @@ func (app Application) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case ErrorMsg:
 		app.err = msg
 		return app, nil
+	case ClearErrorMsg:
+		app.err = nil
+		return app, nil
 	case RefreshStatsMsg:
 		stats, err := stats(app.services, app.date)
 		if err != nil {
 			return app, Error(err)
 		}
 		app.stats = stats
+		if app.err != nil {
+			app.err = nil
+		}
+		return app, nil
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "left":
@@ -123,7 +130,7 @@ func (app Application) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (app Application) View() string {
-	s := fmt.Sprintf("[%s]\n", app.date.Format(time.DateOnly))
+	s := ""
 	switch app.activeScreen {
 	case MainMenuScreen:
 		s += app.mainMenu.View()
@@ -138,14 +145,25 @@ func (app Application) View() string {
 	}
 
 	if app.info != nil {
-		s += fmt.Sprintf("\n\nInfo:\n%s", *app.info)
+		s += StyleTitle.Render("Info")
+		s += "\n"
+		s += StyleText.Render(*app.info)
+		s += "\n"
 	}
 
 	if app.err != nil {
-		s += fmt.Sprintf("\n\nError:\n%s", app.err.Error())
+		s += StyleError.Render("Error")
+		s += "\n"
+		s += StyleError.Render(app.err.Error())
+		s += "\n"
 	}
 
-	s += fmt.Sprintf("\n\n%s", app.stats)
+	s += StyleTitle.Render("Date")
+	s += "\n"
+	s += StyleText.Render(app.date.Format(time.DateOnly))
+	s += "\n"
+
+	s += app.stats
 
 	return s
 }
@@ -212,6 +230,12 @@ func Error(err error) func() tea.Msg {
 	}
 }
 
+func ClearError() func() tea.Msg {
+	return func() tea.Msg {
+		return ClearErrorMsg{}
+	}
+}
+
 func RefreshStats() func() tea.Msg {
 	return func() tea.Msg {
 		return RefreshStatsMsg{}
@@ -237,8 +261,17 @@ func stats(services *Services, date time.Time) (string, error) {
 	}
 
 	stats := ""
-	stats += fmt.Sprintf("Calories\n%s\n\n", caloriesStats)
-	stats += fmt.Sprintf("Weight\n%s\n%s\n", weightStats, weeklyChange)
+	stats += StyleTitle.Render("Calories")
+	stats += "\n"
+	stats += StyleText.Render(caloriesStats)
+	stats += "\n"
+
+	stats += StyleTitle.Render("Weight")
+	stats += "\n"
+	stats += StyleText.Render(weightStats)
+	stats += "\n"
+	stats += StyleText.Render(weeklyChange)
+	stats += "\n"
 
 	return stats, nil
 }

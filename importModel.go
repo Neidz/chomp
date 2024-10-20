@@ -31,6 +31,7 @@ func (m ImportDataModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			if m.fitnotesDataForm.Active {
 				m.fitnotesDataForm.Reset()
+				return m, ClearError()
 			} else {
 				return m, SwitchScreen(MainMenuScreen)
 			}
@@ -73,8 +74,8 @@ func (m ImportDataModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						}
 					}
 
-					info := fmt.Sprintf("calorie records added: %d\ncalorie records not added (because of existing records): %d\n", calAdded, calAlreadyFound)
-					info += fmt.Sprintf("weight records added: %d\nweight records not added (because of existing records): %d\n", weightsAdded, weightsAlreadyFound)
+					info := fmt.Sprintf("calories records added: %d\ncalories records not added (because of existing records): %d\n", calAdded, calAlreadyFound)
+					info += fmt.Sprintf("weight records added: %d\nweight records not added (because of existing records): %d", weightsAdded, weightsAlreadyFound)
 
 					m.fitnotesDataForm.Reset()
 					return m, tea.Batch(RefreshStats(), ShowInformation(info))
@@ -97,21 +98,12 @@ func (m ImportDataModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m ImportDataModel) View() string {
-	s := "Import data\n\n"
+	s := ""
+	s += StyleTitle.Render("Import data")
+	s += "\n\n"
 
-	formActive := m.fitnotesDataForm.Active
-
-	if m.fitnotesDataForm.Active {
-		s += fmt.Sprintf("%s (%s)\n>> %s\n\n\n", m.fitnotesDataForm.Title, m.fitnotesDataForm.Description, m.fitnotesDataForm.RawValue)
-	}
-
-	for i, option := range importOptions {
-		cursor := " "
-		if i == m.cursor && !formActive {
-			cursor = ">"
-		}
-		s += fmt.Sprintf("%s %s\n", cursor, option)
-	}
+	s += formattedForm(m.fitnotesDataForm)
+	s += formattedOptions(importOptions, m.cursor, !m.fitnotesDataForm.Active)
 
 	return s
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -70,20 +69,12 @@ func (m WeightModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m WeightModel) View() string {
-	s := "Weight\n\n"
-	formActive := m.setForm.Active
+	s := ""
+	s += StyleTitle.Render("Weight")
+	s += "\n\n"
 
-	if m.setForm.Active {
-		s += fmt.Sprintf("%s (%s)\n>> %s\n\n\n", m.setForm.Title, m.setForm.Description, m.setForm.RawValue)
-	}
-
-	for i, option := range weightOptions {
-		cursor := " "
-		if i == m.cursor && !formActive {
-			cursor = ">"
-		}
-		s += fmt.Sprintf("%s %s\n", cursor, option)
-	}
+	s += formattedForm(m.setForm)
+	s += formattedOptions(weightOptions, m.cursor, !m.setForm.Active)
 
 	return s
 }

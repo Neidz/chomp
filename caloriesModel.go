@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -89,20 +88,12 @@ func (m CaloriesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m CaloriesModel) View() string {
-	s := "Calories\n\n"
-	formActive := m.addForm.Active
+	s := ""
+	s += StyleTitle.Render("Calories")
+	s += "\n\n"
 
-	if m.addForm.Active {
-		s += fmt.Sprintf("%s (%s)\n>> %s\n\n\n", m.addForm.Title, m.addForm.Description, m.addForm.RawValue)
-	}
-
-	for i, option := range caloriesOptions {
-		cursor := " "
-		if i == m.cursor && !formActive {
-			cursor = ">"
-		}
-		s += fmt.Sprintf("%s %s\n", cursor, option)
-	}
+	s += formattedForm(m.addForm)
+	s += formattedOptions(caloriesOptions, m.cursor, !m.addForm.Active)
 
 	return s
 }

@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -45,15 +43,11 @@ func (m MainMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m MainMenuModel) View() string {
-	s := "Main menu\n\n"
+	s := ""
+	s += StyleTitle.Render("Main menu")
+	s += "\n\n"
 
-	for i, option := range mainMenuOptions {
-		cursor := " "
-		if i == m.cursor {
-			cursor = ">"
-		}
-		s += fmt.Sprintf("%s %s\n", cursor, option)
-	}
+	s += formattedOptions(mainMenuOptions, m.cursor, true)
 
 	return s
 }
