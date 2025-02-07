@@ -1,40 +1,149 @@
 use iced::{
-    widget::{column, row, Button, Text},
-    Element,
+    widget::{column, row, Button, Column, Text},
+    Element, Length,
+};
+use rusqlite::Connection;
+
+use crate::{
+    data::{Data, DataError},
+    form_field::InputFormFieldError,
+    product_form::{render_product_form, CreateUpdateProductForm},
 };
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    Hello,
+    ChangeScreen(Screen),
+
+    UpdateCreateProductFormName(String),
+    UpdateCreateProductFormCompany(String),
+    UpdateCreateProductFormCalories(String),
+    UpdateCreateProductFormFats(String),
+    UpdateCreateProductFormProteins(String),
+    UpdateCreateProductFormCarbohydrates(String),
+    SubmitCreateProductForm,
 }
 
-pub struct App {}
+#[derive(Debug, Clone)]
+pub enum Screen {
+    Home,
+    CreateProduct,
+    ProductList,
+}
+
+pub struct App {
+    data: Data,
+    screen: Screen,
+    create_product_form: CreateUpdateProductForm,
+}
 
 impl App {
-    pub fn new() -> Self {
-        App {}
+    pub fn new(db: Connection) -> Self {
+        App {
+            data: Data::new(db),
+            screen: Screen::Home,
+            create_product_form: CreateUpdateProductForm::new(),
+        }
     }
 
     pub fn view(&self) -> Element<Message> {
-        let calories_content = column![
-            Text::new(format!("Current calories",)),
-            row![Button::new("Add").on_press(Message::Hello)].spacing(20),
-        ]
-        .padding(20)
-        .spacing(20);
+        let content = match self.screen {
+            Screen::Home => self.home_screen(),
+            Screen::CreateProduct => self.create_product_screen(),
+            Screen::ProductList => self.product_list_screen(),
+        };
 
-        row![self.sidebar(), calories_content].into()
+        row![self.sidebar(), content].padding(20).spacing(20).into()
     }
 
     pub fn update(&mut self, message: Message) {
         match message {
-            Message::Hello => {
-                println!("Hello");
+            Message::ChangeScreen(s) => {
+                self.screen = s;
+            }
+            Message::UpdateCreateProductFormName(s) => {
+                self.create_product_form.name.raw_input = s;
+            }
+            Message::UpdateCreateProductFormCompany(s) => {
+                self.create_product_form.company.raw_input = s;
+            }
+            Message::UpdateCreateProductFormCalories(s) => {
+                self.create_product_form.calories.raw_input = s;
+            }
+            Message::UpdateCreateProductFormFats(s) => {
+                self.create_product_form.fats.raw_input = s;
+            }
+            Message::UpdateCreateProductFormProteins(s) => {
+                self.create_product_form.proteins.raw_input = s;
+            }
+            Message::UpdateCreateProductFormCarbohydrates(s) => {
+                self.create_product_form.carbohydrates.raw_input = s;
+            }
+            Message::SubmitCreateProductForm => {
+                if let Ok(product) = self.create_product_form.parse() {
+                    if let Some(err) = self.data.product.create(product).err() {
+                        match err {
+                            DataError::UniqueConstraintViolation(unique_field)
+                                if unique_field == "products.name" =>
+                            {
+                                self.create_product_form.name.error =
+                                    Some(InputFormFieldError::Custom(
+                                        "Product with this name already exists".to_string(),
+                                    ))
+                            }
+                            _ => {
+                                eprintln!("Error: {:?}", err);
+                            }
+                        }
+                    } else {
+                        self.screen = Screen::ProductList
+                    }
+                };
             }
         }
     }
 
+    fn home_screen(&self) -> Element<Message> {
+        column![Text::new("Home").size(40)].spacing(10).into()
+    }
+
+    fn create_product_screen(&self) -> Element<Message> {
+        column![
+            Text::new("Create Product").size(40),
+            render_product_form(&self.create_product_form)
+        ]
+        .spacing(10)
+        .into()
+    }
+
+    fn product_list_screen(&self) -> Element<Message> {
+        column![Text::new("Product List").size(40)]
+            .spacing(10)
+            .into()
+    }
+
     fn sidebar(&self) -> Element<Message> {
-        column![Button::new("Home"), Button::new("Product List")].into()
+        let buttons = vec![
+            ("Home", Message::ChangeScreen(Screen::Home)),
+            (
+                "Create Product",
+                Message::ChangeScreen(Screen::CreateProduct),
+            ),
+            ("Product List", Message::ChangeScreen(Screen::ProductList)),
+        ];
+
+        Column::from(
+            buttons
+                .into_iter()
+                .map(|(content, message)| {
+                    Button::new(content)
+                        .on_press(message)
+                        .width(Length::Fill)
+                        .into()
+                })
+                .collect(),
+        )
+        .width(200)
+        .spacing(10)
+        .into()
     }
 }
