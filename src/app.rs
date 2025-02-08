@@ -5,9 +5,10 @@ use iced::{
 use rusqlite::Connection;
 
 use crate::{
-    data::{Data, DataError},
+    data::{Data, DataError, Product},
     form_field::InputFormFieldError,
     product_form::{render_product_form, CreateUpdateProductForm},
+    product_list::render_product_list,
 };
 
 #[derive(Debug, Clone)]
@@ -32,14 +33,19 @@ pub enum Screen {
 
 pub struct App {
     data: Data,
+    products: Vec<Product>,
     screen: Screen,
     create_product_form: CreateUpdateProductForm,
 }
 
 impl App {
     pub fn new(db: Connection) -> Self {
+        let data = Data::new(db);
+        let products = data.product.list().unwrap();
+
         App {
-            data: Data::new(db),
+            data,
+            products,
             screen: Screen::Home,
             create_product_form: CreateUpdateProductForm::new(),
         }
@@ -116,9 +122,12 @@ impl App {
     }
 
     fn product_list_screen(&self) -> Element<Message> {
-        column![Text::new("Product List").size(40)]
-            .spacing(10)
-            .into()
+        column![
+            Text::new("Product List").size(40),
+            render_product_list(&self.products)
+        ]
+        .spacing(10)
+        .into()
     }
 
     fn sidebar(&self) -> Element<Message> {

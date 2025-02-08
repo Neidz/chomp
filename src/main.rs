@@ -7,6 +7,8 @@ mod data;
 mod db;
 mod form_field;
 mod product_form;
+mod product_list;
+mod style;
 
 fn main() -> iced::Result {
     let db = prepare_conn();
