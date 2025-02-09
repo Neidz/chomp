@@ -10,7 +10,7 @@ use crate::{
 };
 
 pub fn render_product_list(products: &[Product]) -> Element<Message> {
-    let mut table = column![list_header()];
+    let mut table = column![list_header_row()];
     for (i, product) in products.iter().enumerate() {
         table = table.push(list_row(product, i % 2 == 0))
     }
@@ -18,7 +18,7 @@ pub fn render_product_list(products: &[Product]) -> Element<Message> {
     Scrollable::new(table).into()
 }
 
-fn list_header() -> Element<'static, Message> {
+fn list_header_row() -> Element<'static, Message> {
     let row = row![
         Text::new("Id").width(Length::Fill),
         Text::new("Name").width(Length::Fill),

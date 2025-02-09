@@ -8,6 +8,7 @@ use rusqlite::Connection;
 use crate::{
     data::{Data, DataError, Meal, Product},
     form_field::InputFormFieldError,
+    meal_list::render_meal_list,
     product_form::{render_product_form, CreateUpdateProductForm},
     product_list::render_product_list,
 };
@@ -18,6 +19,7 @@ pub enum Screen {
     CreateProduct,
     UpdateProduct(usize),
     ProductList,
+    MealList,
 }
 
 #[derive(Debug, Clone)]
@@ -52,7 +54,7 @@ impl App {
         let day = Local::now().date_naive();
         let data = Data::new(db);
         let products = data.product.list().unwrap();
-        let meals = data.meal.list(day).unwrap();
+        let meals = data.meal.list_or_create_default(day).unwrap();
 
         App {
             data,
@@ -70,6 +72,7 @@ impl App {
             Screen::Home => self.home_screen(),
             Screen::CreateProduct => self.create_product_screen(),
             Screen::ProductList => self.product_list_screen(),
+            Screen::MealList => self.meals_screen(),
             Screen::UpdateProduct(_) => self.update_product_screen(),
         };
 
@@ -232,17 +235,24 @@ impl App {
         .into()
     }
 
+    fn meals_screen(&self) -> Element<Message> {
+        column![Text::new("Meals").size(40), render_meal_list(&self.meals)]
+            .spacing(10)
+            .into()
+    }
+
     fn refresh_products(&mut self) {
         self.products = self.data.product.list().unwrap();
     }
 
     fn refresh_meals(&mut self) {
-        self.meals = self.data.meal.list(self.day).unwrap();
+        self.meals = self.data.meal.list_or_create_default(self.day).unwrap();
     }
 
     fn sidebar(&self) -> Element<Message> {
         let buttons = vec![
             ("Home", Message::ChangeScreen(Screen::Home)),
+            ("Meals", Message::ChangeScreen(Screen::MealList)),
             (
                 "Create Product",
                 Message::ChangeScreen(Screen::CreateProduct),

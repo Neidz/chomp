@@ -257,6 +257,20 @@ impl MealData {
         .map_err(DataError::from)
     }
 
+    pub fn list_or_create_default(&self, day: NaiveDate) -> Result<Vec<Meal>, DataError> {
+        match self.list(day) {
+            Ok(m) => {
+                if m.is_empty() {
+                    self.create_default(day)?;
+                    self.list(day)
+                } else {
+                    Ok(m)
+                }
+            }
+            Err(err) => Err(err),
+        }
+    }
+
     pub fn create_default(&self, day: NaiveDate) -> Result<(), DataError> {
         DEFAULT_MEALS
             .into_iter()
