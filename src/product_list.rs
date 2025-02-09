@@ -1,9 +1,13 @@
 use iced::{
-    widget::{column, row, Container, Scrollable, Text},
+    widget::{column, row, Button, Container, Scrollable, Text},
     Element, Length,
 };
 
-use crate::{app::Message, data::Product, style::TableRowStyle};
+use crate::{
+    app::{Message, Screen},
+    data::Product,
+    style::TableRowStyle,
+};
 
 pub fn render_product_list(products: &[Product]) -> Element<Message> {
     let mut table = column![list_header()];
@@ -40,7 +44,12 @@ fn list_row(p: &Product, even: bool) -> Element<Message> {
         Text::new(format!("{:.2}", p.fats)).width(Length::Fill),
         Text::new(format!("{:.2}", p.proteins)).width(Length::Fill),
         Text::new(format!("{:.2}", p.carbohydrates)).width(Length::Fill),
-        Text::new("-").width(Length::Fill)
+        row![
+            Button::new("Update").on_press(Message::ChangeScreen(Screen::UpdateProduct(p.id))),
+            Button::new("Delete").on_press(Message::DeleteProduct(p.id))
+        ]
+        .spacing(10)
+        .width(Length::Fill)
     ]
     .padding(10)
     .width(Length::Fill);

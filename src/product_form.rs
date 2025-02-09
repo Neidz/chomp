@@ -1,5 +1,5 @@
 use iced::{
-    widget::{column, Button, Text, TextInput},
+    widget::{column, Text, TextInput},
     Color, Element,
 };
 
@@ -28,6 +28,28 @@ impl CreateUpdateProductForm {
             fats: InputFormField::new("Fats* (g)", "2.0"),
             proteins: InputFormField::new("Proteins* (g)", "20.0"),
             carbohydrates: InputFormField::new("Carbohydrates* (g)", "1.0"),
+        }
+    }
+
+    pub fn new_filled(
+        name: &str,
+        company: &str,
+        calories: &str,
+        fats: &str,
+        proteins: &str,
+        carbohydrates: &str,
+    ) -> Self {
+        CreateUpdateProductForm {
+            name: InputFormField::new_with_raw_value("Name*", "Chicken", name),
+            company: InputFormField::new_with_raw_value("Company", "Chicken Inc.", company),
+            calories: InputFormField::new_with_raw_value("Calories* (kcal)", "100.0", calories),
+            fats: InputFormField::new_with_raw_value("Fats* (g)", "2.0", fats),
+            proteins: InputFormField::new_with_raw_value("Proteins* (g)", "20.0", proteins),
+            carbohydrates: InputFormField::new_with_raw_value(
+                "Carbohydrates* (g)",
+                "1.0",
+                carbohydrates,
+            ),
         }
     }
 
@@ -131,7 +153,6 @@ pub fn render_product_form(form: &CreateUpdateProductForm) -> Element<Message> {
         render_field(&form.carbohydrates, |s| {
             Message::UpdateCreateProductFormCarbohydrates(s)
         }),
-        Button::new("Create").on_press(Message::SubmitCreateProductForm)
     ]
     .spacing(10)
     .into()
