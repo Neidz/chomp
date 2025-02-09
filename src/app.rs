@@ -72,42 +72,12 @@ impl App {
     }
 
     pub fn view(&self) -> Element<Message> {
-        let content = match self.screen {
+        match self.screen {
             Screen::Home => self.home_screen(),
             Screen::CreateProduct => self.create_product_screen(),
             Screen::ProductList => self.product_list_screen(),
             Screen::MealList => self.meals_screen(),
             Screen::UpdateProduct(_) => self.update_product_screen(),
-        };
-
-        let modal = match self.screen {
-            Screen::MealList => match self.add_product_to_meal_id {
-                Some(meal_id) => Some((
-                    render_add_product_to_meal_modal_content(meal_id),
-                    Message::UpdateMealInAddProductToMeal(None),
-                )),
-                None => None,
-            },
-            _ => None,
-        };
-
-        match modal {
-            Some((modal_content, on_blur)) => self
-                .modal(
-                    row![self.sidebar(), content]
-                        .height(Length::Fill)
-                        .padding(20)
-                        .spacing(20)
-                        .into(),
-                    modal_content,
-                    on_blur,
-                )
-                .into(),
-            None => row![self.sidebar(), content]
-                .height(Length::Fill)
-                .padding(20)
-                .spacing(20)
-                .into(),
         }
     }
 
@@ -249,44 +219,81 @@ impl App {
     }
 
     fn home_screen(&self) -> Element<Message> {
-        column![Text::new("Home").size(40)].spacing(10).into()
+        let content = column![Text::new("Home").size(40)].spacing(10);
+
+        row![self.sidebar(), content]
+            .height(Length::Fill)
+            .padding(20)
+            .spacing(20)
+            .into()
     }
 
     fn create_product_screen(&self) -> Element<Message> {
-        column![
+        let content = column![
             Text::new("Create Product").size(40),
             render_product_form(&self.create_product_form),
             Button::new("Create").on_press(Message::SubmitCreateProductForm)
         ]
-        .spacing(10)
-        .into()
+        .spacing(10);
+
+        row![self.sidebar(), content]
+            .height(Length::Fill)
+            .padding(20)
+            .spacing(20)
+            .into()
     }
 
     fn update_product_screen(&self) -> Element<Message> {
         let (_id, form) = self.update_product_form.as_ref().unwrap();
 
-        column![
+        let content = column![
             Text::new("Update Product").size(40),
             render_product_form(form),
             Button::new("Update").on_press(Message::SubmitUpdateProductForm)
         ]
-        .spacing(10)
-        .into()
+        .spacing(10);
+
+        row![self.sidebar(), content]
+            .height(Length::Fill)
+            .padding(20)
+            .spacing(20)
+            .into()
     }
 
     fn product_list_screen(&self) -> Element<Message> {
-        column![
+        let content = column![
             Text::new("Product List").size(40),
             render_product_list(&self.products)
         ]
-        .spacing(10)
-        .into()
+        .spacing(10);
+
+        row![self.sidebar(), content]
+            .height(Length::Fill)
+            .padding(20)
+            .spacing(20)
+            .into()
     }
 
     fn meals_screen(&self) -> Element<Message> {
-        column![Text::new("Meals").size(40), render_meal_list(&self.meals)]
-            .spacing(10)
-            .into()
+        let content =
+            column![Text::new("Meals").size(40), render_meal_list(&self.meals)].spacing(10);
+
+        let content_with_sidebar = row![self.sidebar(), content]
+            .height(Length::Fill)
+            .padding(20)
+            .spacing(20);
+
+        match self.add_product_to_meal_id {
+            Some(meal_id) => self
+                .modal(
+                    content_with_sidebar.into(),
+                    render_add_product_to_meal_modal_content(meal_id),
+                    Message::UpdateMealInAddProductToMeal(None),
+                )
+                .into(),
+
+            None => content_with_sidebar.into(),
+        }
     }
 
     fn refresh_products(&mut self) {
