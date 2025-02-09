@@ -9,6 +9,10 @@ use crate::{
     style::TableRowStyle,
 };
 
+pub fn render_add_product_to_meal_modal_content(meal_id: usize) -> Element<'static, Message> {
+    column![Text::new(meal_id)].into()
+}
+
 pub fn render_meal_list(meals: &[Meal]) -> Element<Message> {
     let mut tables = column![].spacing(10);
     for (_, meal) in meals.iter().enumerate() {
@@ -24,6 +28,7 @@ fn render_meal(meal: &Meal) -> Element<Message> {
             Text::new(&meal.name).size(20),
             horizontal_space(),
             Button::new("Add Product")
+                .on_press(Message::UpdateMealInAddProductToMeal(Some(meal.id)))
         ],
         list_header_row()
     ];

@@ -1,14 +1,14 @@
 use chrono::{Local, NaiveDate};
 use iced::{
-    widget::{column, row, Button, Column, Text},
-    Element, Length,
+    widget::{center, column, container, mouse_area, opaque, row, stack, Button, Column, Text},
+    Color, Element, Length,
 };
 use rusqlite::Connection;
 
 use crate::{
-    data::{Data, DataError, Meal, Product},
+    data::{AddProductToMeal, Data, DataError, Meal, Product},
     form_field::InputFormFieldError,
-    meal_list::render_meal_list,
+    meal_list::{render_add_product_to_meal_modal_content, render_meal_list},
     product_form::{render_product_form, CreateUpdateProductForm},
     product_list::render_product_list,
 };
@@ -35,6 +35,8 @@ pub enum Message {
     SubmitCreateProductForm,
     SubmitUpdateProductForm,
     DeleteProduct(usize),
+    UpdateMealInAddProductToMeal(Option<usize>),
+    SubmitAddProductToMealWithProduct(usize),
 }
 
 pub struct App {
@@ -47,6 +49,7 @@ pub struct App {
 
     create_product_form: CreateUpdateProductForm,
     update_product_form: Option<(usize, CreateUpdateProductForm)>,
+    add_product_to_meal_id: Option<usize>,
 }
 
 impl App {
@@ -64,6 +67,7 @@ impl App {
             meals,
             create_product_form: CreateUpdateProductForm::new(),
             update_product_form: None,
+            add_product_to_meal_id: None,
         }
     }
 
@@ -76,7 +80,35 @@ impl App {
             Screen::UpdateProduct(_) => self.update_product_screen(),
         };
 
-        row![self.sidebar(), content].padding(20).spacing(20).into()
+        let modal = match self.screen {
+            Screen::MealList => match self.add_product_to_meal_id {
+                Some(meal_id) => Some((
+                    render_add_product_to_meal_modal_content(meal_id),
+                    Message::UpdateMealInAddProductToMeal(None),
+                )),
+                None => None,
+            },
+            _ => None,
+        };
+
+        match modal {
+            Some((modal_content, on_blur)) => self
+                .modal(
+                    row![self.sidebar(), content]
+                        .height(Length::Fill)
+                        .padding(20)
+                        .spacing(20)
+                        .into(),
+                    modal_content,
+                    on_blur,
+                )
+                .into(),
+            None => row![self.sidebar(), content]
+                .height(Length::Fill)
+                .padding(20)
+                .spacing(20)
+                .into(),
+        }
     }
 
     pub fn update(&mut self, message: Message) {
@@ -197,6 +229,22 @@ impl App {
                 self.data.product.delete(id).unwrap();
                 self.refresh_products();
             }
+            Message::UpdateMealInAddProductToMeal(meal_id) => {
+                self.add_product_to_meal_id = meal_id;
+            }
+            Message::SubmitAddProductToMealWithProduct(product_id) => {
+                if let Some(meal_id) = self.add_product_to_meal_id {
+                    self.data
+                        .meal
+                        .add_product(AddProductToMeal {
+                            meal_id,
+                            product_id,
+                        })
+                        .unwrap();
+                } else {
+                    panic!("Attempted to submit adding product to meal without providing meal id before")
+                }
+            }
         }
     }
 
@@ -247,6 +295,33 @@ impl App {
 
     fn refresh_meals(&mut self) {
         self.meals = self.data.meal.list_or_create_default(self.day).unwrap();
+    }
+
+    fn modal<'a>(
+        &self,
+        base: Element<'a, Message>,
+        modal_content: Element<'a, Message>,
+        on_blur: Message,
+    ) -> Element<'a, Message> {
+        stack![
+            base,
+            opaque(
+                mouse_area(center(opaque(modal_content)).style(|_theme| {
+                    container::Style {
+                        background: Some(
+                            Color {
+                                a: 0.8,
+                                ..Color::BLACK
+                            }
+                            .into(),
+                        ),
+                        ..container::Style::default()
+                    }
+                }))
+                .on_press(on_blur)
+            )
+        ]
+        .into()
     }
 
     fn sidebar(&self) -> Element<Message> {

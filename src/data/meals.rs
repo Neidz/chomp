@@ -52,8 +52,8 @@ impl Eq for Meal {}
 
 #[derive(Debug)]
 pub struct AddProductToMeal {
-    pub product_id: usize,
     pub meal_id: usize,
+    pub product_id: usize,
 }
 
 #[derive(Debug)]
