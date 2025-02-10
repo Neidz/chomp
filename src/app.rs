@@ -6,9 +6,10 @@ use iced::{
 use rusqlite::Connection;
 
 use crate::{
-    data::{AddProductToMeal, Data, DataError, Meal, Product},
+    data::{Data, DataError, Meal, Product},
     form_field::InputFormFieldError,
-    meal_list::{render_add_product_to_meal_modal_content, render_meal_list},
+    meal_list::render_meal_list,
+    meal_product_form::{render_add_product_to_meal_form, MealProductForm},
     product_form::{render_product_form, CreateUpdateProductForm},
     product_list::render_product_list,
 };
@@ -34,9 +35,13 @@ pub enum Message {
     UpdateCreateProductFormCarbohydrates(String),
     SubmitCreateProductForm,
     SubmitUpdateProductForm,
+
     DeleteProduct(usize),
-    UpdateMealInAddProductToMeal(Option<usize>),
-    SubmitAddProductToMealWithProduct(usize),
+
+    UpdateAddMealProductFormMeal(Option<usize>),
+    UpdateAddMealProductFormWeight(String),
+    UpdateAddMealProductFormProduct(usize),
+    SubmitAddMealProductForm,
 }
 
 pub struct App {
@@ -49,7 +54,7 @@ pub struct App {
 
     create_product_form: CreateUpdateProductForm,
     update_product_form: Option<(usize, CreateUpdateProductForm)>,
-    add_product_to_meal_id: Option<usize>,
+    add_meal_product_form: Option<MealProductForm>,
 }
 
 impl App {
@@ -63,11 +68,11 @@ impl App {
             data,
             screen: Screen::Home,
             day,
-            products,
+            products: products.clone(),
             meals,
             create_product_form: CreateUpdateProductForm::new(),
             update_product_form: None,
-            add_product_to_meal_id: None,
+            add_meal_product_form: None,
         }
     }
 
@@ -199,21 +204,30 @@ impl App {
                 self.data.product.delete(id).unwrap();
                 self.refresh_products();
             }
-            Message::UpdateMealInAddProductToMeal(meal_id) => {
-                self.add_product_to_meal_id = meal_id;
-            }
-            Message::SubmitAddProductToMealWithProduct(product_id) => {
-                if let Some(meal_id) = self.add_product_to_meal_id {
-                    self.data
-                        .meal
-                        .add_product(AddProductToMeal {
-                            meal_id,
-                            product_id,
-                        })
-                        .unwrap();
-                } else {
-                    panic!("Attempted to submit adding product to meal without providing meal id before")
+            Message::UpdateAddMealProductFormMeal(meal_id) => match meal_id {
+                Some(id) => {
+                    let meal = self.data.meal.read(id).unwrap();
+                    self.add_meal_product_form = Some(MealProductForm::new(&self.products, &meal));
                 }
+                None => {
+                    self.add_meal_product_form = None;
+                }
+            },
+            Message::UpdateAddMealProductFormWeight(s) => {
+                let form = &mut self.add_meal_product_form.as_mut().unwrap();
+                form.weight.raw_input = s;
+            }
+            Message::UpdateAddMealProductFormProduct(id) => {
+                let form = &mut self.add_meal_product_form.as_mut().unwrap();
+                form.product_id = Some(id);
+            }
+            Message::SubmitAddMealProductForm => {
+                let form = &mut self.add_meal_product_form.as_mut().unwrap();
+                let add_meal_product = form.parse().unwrap();
+                self.data.meal.add_product(add_meal_product).unwrap();
+
+                self.refresh_meals();
+                self.add_meal_product_form = None;
             }
         }
     }
@@ -230,7 +244,7 @@ impl App {
 
     fn create_product_screen(&self) -> Element<Message> {
         let content = column![
-            Text::new("Create Product").size(40),
+            Text::new("Create product").size(40),
             render_product_form(&self.create_product_form),
             Button::new("Create").on_press(Message::SubmitCreateProductForm)
         ]
@@ -247,7 +261,7 @@ impl App {
         let (_id, form) = self.update_product_form.as_ref().unwrap();
 
         let content = column![
-            Text::new("Update Product").size(40),
+            Text::new("Update product").size(40),
             render_product_form(form),
             Button::new("Update").on_press(Message::SubmitUpdateProductForm)
         ]
@@ -262,7 +276,7 @@ impl App {
 
     fn product_list_screen(&self) -> Element<Message> {
         let content = column![
-            Text::new("Product List").size(40),
+            Text::new("Product list").size(40),
             render_product_list(&self.products)
         ]
         .spacing(10);
@@ -283,12 +297,12 @@ impl App {
             .padding(20)
             .spacing(20);
 
-        match self.add_product_to_meal_id {
-            Some(meal_id) => self
+        match &self.add_meal_product_form {
+            Some(form) => self
                 .modal(
                     content_with_sidebar.into(),
-                    render_add_product_to_meal_modal_content(meal_id),
-                    Message::UpdateMealInAddProductToMeal(None),
+                    render_add_product_to_meal_form(&form),
+                    Message::UpdateAddMealProductFormMeal(None),
                 )
                 .into(),
 
@@ -297,7 +311,8 @@ impl App {
     }
 
     fn refresh_products(&mut self) {
-        self.products = self.data.product.list().unwrap();
+        let products = self.data.product.list().unwrap();
+        self.products = products.clone();
     }
 
     fn refresh_meals(&mut self) {
@@ -322,6 +337,7 @@ impl App {
                             }
                             .into(),
                         ),
+
                         ..container::Style::default()
                     }
                 }))

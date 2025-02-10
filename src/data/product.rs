@@ -1,11 +1,11 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, fmt, rc::Rc};
 
 use rusqlite::{params, Connection};
 use serde::Deserialize;
 
 use super::DataError;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Product {
     pub id: usize,
     pub name: String,
@@ -14,6 +14,12 @@ pub struct Product {
     pub fats: f64,
     pub proteins: f64,
     pub carbohydrates: f64,
+}
+
+impl fmt::Display for Product {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.name)
+    }
 }
 
 #[derive(Debug, Deserialize, Clone)]

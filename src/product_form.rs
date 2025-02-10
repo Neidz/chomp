@@ -1,12 +1,9 @@
-use iced::{
-    widget::{column, Text, TextInput},
-    Color, Element,
-};
+use iced::{widget::column, Element};
 
 use crate::{
     app::Message,
     data::CreateUpdateProduct,
-    form_field::{InputFormField, InputFormFieldError},
+    form_field::{render_input_form_field, InputFormField, InputFormFieldError},
 };
 
 #[derive(Debug)]
@@ -137,39 +134,23 @@ impl CreateUpdateProductForm {
 
 pub fn render_product_form(form: &CreateUpdateProductForm) -> Element<Message> {
     column![
-        render_field(&form.name, |s| Message::UpdateCreateProductFormName(s)),
-        render_field(&form.company, |s| Message::UpdateCreateProductFormCompany(
+        render_input_form_field(&form.name, |s| Message::UpdateCreateProductFormName(s)),
+        render_input_form_field(&form.company, |s| Message::UpdateCreateProductFormCompany(
             s
         )),
-        render_field(
+        render_input_form_field(
             &form.calories,
             |s| Message::UpdateCreateProductFormCalories(s)
         ),
-        render_field(&form.fats, |s| Message::UpdateCreateProductFormFats(s)),
-        render_field(
+        render_input_form_field(&form.fats, |s| Message::UpdateCreateProductFormFats(s)),
+        render_input_form_field(
             &form.proteins,
             |s| Message::UpdateCreateProductFormProteins(s)
         ),
-        render_field(&form.carbohydrates, |s| {
+        render_input_form_field(&form.carbohydrates, |s| {
             Message::UpdateCreateProductFormCarbohydrates(s)
         }),
     ]
     .spacing(10)
     .into()
-}
-
-fn render_field<T, F>(field: &InputFormField<T>, handle_message: F) -> Element<Message>
-where
-    F: Fn(String) -> Message + 'static,
-{
-    let mut column = column![
-        Text::new(&field.name),
-        TextInput::new(&field.placeholder, &field.raw_input).on_input(handle_message)
-    ];
-
-    if let Some(err) = &field.error {
-        column = column.push(Text::new(err.to_string()).color(Color::from_rgb(1.0, 0.0, 0.0)));
-    }
-
-    column.into()
 }

@@ -1,5 +1,12 @@
 use std::fmt::{self};
 
+use iced::{
+    widget::{column, Text, TextInput},
+    Color, Element,
+};
+
+use crate::app::Message;
+
 type Length = usize;
 
 #[derive(Debug)]
@@ -76,4 +83,23 @@ impl<T> InputFormField<T> {
             }
         }
     }
+}
+
+pub fn render_input_form_field<T, F>(
+    field: &InputFormField<T>,
+    handle_message: F,
+) -> Element<Message>
+where
+    F: Fn(String) -> Message + 'static,
+{
+    let mut column = column![
+        Text::new(&field.name),
+        TextInput::new(&field.placeholder, &field.raw_input).on_input(handle_message)
+    ];
+
+    if let Some(err) = &field.error {
+        column = column.push(Text::new(err.to_string()).color(Color::from_rgb(1.0, 0.0, 0.0)));
+    }
+
+    column.into()
 }

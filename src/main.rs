@@ -7,6 +7,7 @@ mod data;
 mod db;
 mod form_field;
 mod meal_list;
+mod meal_product_form;
 mod product_form;
 mod product_list;
 mod style;

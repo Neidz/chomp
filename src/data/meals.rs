@@ -3,12 +3,12 @@ use std::{cell::RefCell, cmp::Ordering, collections::HashMap, rc::Rc};
 use chrono::NaiveDate;
 use rusqlite::{params, Connection};
 
-use super::DataError;
+use super::{DataError, Product};
 
 const DEFAULT_MEALS: [&str; 4] = ["Breakfast", "Snack", "Lunch", "Dinner"];
 
 #[allow(unused)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct MealProduct {
     pub id: usize,
     pub weight: f64,
@@ -18,6 +18,12 @@ pub struct MealProduct {
     pub fats: f64,
     pub proteins: f64,
     pub carbohydrates: f64,
+}
+
+impl PartialEq<MealProduct> for Product {
+    fn eq(&self, other: &MealProduct) -> bool {
+        self.id == other.id
+    }
 }
 
 #[allow(unused)]
@@ -51,9 +57,10 @@ impl PartialEq for Meal {
 impl Eq for Meal {}
 
 #[derive(Debug)]
-pub struct AddProductToMeal {
+pub struct AddMealProduct {
     pub meal_id: usize,
     pub product_id: usize,
+    pub weight: f64,
 }
 
 #[derive(Debug)]
@@ -117,14 +124,14 @@ impl MealData {
         Ok(())
     }
 
-    pub fn add_product(&self, add_product_to_meal: AddProductToMeal) -> Result<(), DataError> {
+    pub fn add_product(&self, add_meal_product: AddMealProduct) -> Result<(), DataError> {
         let query = "
             INSERT INTO meal_products (meal_id, product_id, weight)
             VALUES (?1, ?2, ?3)";
         let args = params![
-            add_product_to_meal.meal_id,
-            add_product_to_meal.product_id,
-            0.0
+            add_meal_product.meal_id,
+            add_meal_product.product_id,
+            add_meal_product.weight
         ];
 
         let db = self.db.borrow();
@@ -152,6 +159,77 @@ impl MealData {
         stmt.execute(args).map_err(DataError::from)?;
 
         Ok(())
+    }
+
+    pub fn read(&self, id: usize) -> Result<Meal, DataError> {
+        let query = "
+            SELECT
+    			meals.id,
+    			meals.day,
+    			meals.name,
+                meals.position,
+    			meal_products.id,
+    			meal_products.weight,
+    			products.name,
+    			products.company,
+    			products.calories * meal_products.weight / 100,
+    			products.fats * meal_products.weight / 100,
+    			products.proteins * meal_products.weight / 100,
+    			products.carbohydrates * meal_products.weight / 100
+    		FROM meals
+    		LEFT JOIN meal_products ON meals.id = meal_products.meal_id
+    		LEFT JOIN products ON meal_products.product_id = products.id
+    		WHERE meals.id = ?1";
+        let args = params![id];
+
+        let db = self.db.borrow();
+        let mut stmt = db.prepare(query)?;
+
+        let rows: Vec<(usize, NaiveDate, String, usize, Option<MealProduct>)> = stmt
+            .query_map(args, |row| {
+                let meal_id: usize = row.get(0)?;
+                let meal_day: NaiveDate = row.get(1)?;
+                let meal_name: String = row.get(2)?;
+                let meal_position: usize = row.get(3)?;
+
+                let has_meal_product = row.get::<_, Option<usize>>(4)?.is_some();
+
+                let meal_product = if has_meal_product {
+                    Some(MealProduct {
+                        id: row.get(4)?,
+                        weight: row.get(5)?,
+                        name: row.get(6)?,
+                        company: row.get(7)?,
+                        calories: row.get(8)?,
+                        fats: row.get(9)?,
+                        proteins: row.get(10)?,
+                        carbohydrates: row.get(11)?,
+                    })
+                } else {
+                    None
+                };
+
+                Ok((meal_id, meal_day, meal_name, meal_position, meal_product))
+            })
+            .map_err(DataError::from)?
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let (meal_id, meal_day, meal_name, meal_position, meal_product) = rows[0].clone();
+        let mut meal = Meal {
+            id: meal_id,
+            day: meal_day,
+            name: meal_name,
+            position: meal_position,
+            products: Vec::new(),
+        };
+
+        for (meal_id, meal_day, meal_name, meal_position, meal_product) in rows {
+            if let Some(product) = meal_product {
+                meal.products.push(product);
+            }
+        }
+
+        Ok(meal)
     }
 
     pub fn list(&self, day: NaiveDate) -> Result<Vec<Meal>, DataError> {
