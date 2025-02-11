@@ -7,7 +7,7 @@ use iced::{
 
 use crate::{
     app::Message,
-    data::{AddMealProduct, Meal, Product},
+    data::{AddMealProduct, Meal, MealProduct, Product, UpdateMealProductWeight},
     form_field::{render_input_form_field, InputFormField, InputFormFieldError},
 };
 
@@ -75,7 +75,7 @@ pub fn render_add_product_to_meal_form(form: &MealProductForm) -> Element<Messag
         &form.combo_box_state,
         "Search product...",
         selected_product,
-        |p| Message::UpdateAddMealProductFormProduct(p.id),
+        |p| Message::CreateMealProductFormProduct(p.id),
     )
     .width(Length::Fill);
 
@@ -83,13 +83,71 @@ pub fn render_add_product_to_meal_form(form: &MealProductForm) -> Element<Messag
         column![
             Text::new(format!("Add product to {}", form.meal.name)).size(30),
             combo_box,
-            render_input_form_field(&form.weight, |s| Message::UpdateAddMealProductFormWeight(s)),
+            render_input_form_field(&form.weight, |w| Message::CreateMealProductFormWeight(w)),
             Button::new("Add Product")
                 .width(Length::Fill)
                 .on_press(Message::SubmitAddMealProductForm),
             Button::new("Cancel")
                 .width(Length::Fill)
-                .on_press(Message::UpdateAddMealProductFormMeal(None))
+                .on_press(Message::CreateMealProductFormMeal(None))
+        ]
+        .spacing(10),
+    )
+    .width(300)
+    .padding(30)
+    .style(container::rounded_box)
+    .into()
+}
+
+#[derive(Debug)]
+pub struct UpdateMealProductForm {
+    pub meal_product: MealProduct,
+    pub weight: InputFormField<f64>,
+}
+
+impl UpdateMealProductForm {
+    pub fn new(meal_product: &MealProduct) -> Self {
+        UpdateMealProductForm {
+            meal_product: meal_product.clone(),
+            weight: InputFormField::new_with_raw_value(
+                "Weight (g)",
+                "20.0",
+                &meal_product.weight.to_string(),
+            ),
+        }
+    }
+
+    pub fn parse(&mut self) -> Result<UpdateMealProductWeight, String> {
+        self.weight.validate(|input| {
+            if input.is_empty() {
+                Err(InputFormFieldError::MissingRequiredValue)
+            } else {
+                match input.parse::<f64>() {
+                    Err(_) => Err(InputFormFieldError::InvalidNumber),
+                    Ok(val) if val < 0.0 => Err(InputFormFieldError::SmallerThanZero),
+                    Ok(val) => Ok(val),
+                }
+            }
+        });
+
+        Ok(UpdateMealProductWeight {
+            meal_product_id: self.meal_product.id,
+            weight: self.weight.value.ok_or("validation failed")?,
+        })
+    }
+}
+
+pub fn render_update_meal_product_form(form: &UpdateMealProductForm) -> Element<Message> {
+    container(
+        column![
+            Text::new(format!("Edit weight of {}", form.meal_product.name)).size(30),
+            render_input_form_field(&form.weight, |w| Message::UpdateMealProductFormWeight(w)),
+            Button::new("Update weight")
+                .width(Length::Fill)
+                .on_press(Message::SubmitUpdateMealProductForm),
+            Button::new("Cancel")
+                .width(Length::Fill)
+                .on_press(Message::UpdateMealProductFormMealProduct(None))
         ]
         .spacing(10),
     )

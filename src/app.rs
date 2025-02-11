@@ -1,3 +1,5 @@
+use core::panic;
+
 use chrono::{Local, NaiveDate};
 use iced::{
     widget::{center, column, container, mouse_area, opaque, row, stack, Button, Column, Text},
@@ -9,16 +11,23 @@ use crate::{
     data::{Data, DataError, Meal, Product},
     form_field::InputFormFieldError,
     meal_list::render_meal_list,
-    meal_product_form::{render_add_product_to_meal_form, MealProductForm},
+    meal_product_form::{
+        render_add_product_to_meal_form, render_update_meal_product_form, MealProductForm,
+        UpdateMealProductForm,
+    },
     product_form::{render_product_form, CreateUpdateProductForm},
     product_list::render_product_list,
 };
+
+type MealId = usize;
+type MealProductId = usize;
+type ProductId = usize;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Screen {
     Home,
     CreateProduct,
-    UpdateProduct(usize),
+    UpdateProduct(ProductId),
     ProductList,
     MealList,
 }
@@ -36,12 +45,18 @@ pub enum Message {
     SubmitCreateProductForm,
     SubmitUpdateProductForm,
 
-    DeleteProduct(usize),
+    DeleteProduct(ProductId),
 
-    UpdateAddMealProductFormMeal(Option<usize>),
-    UpdateAddMealProductFormWeight(String),
-    UpdateAddMealProductFormProduct(usize),
+    CreateMealProductFormMeal(Option<MealId>),
+    CreateMealProductFormWeight(String),
+    CreateMealProductFormProduct(ProductId),
     SubmitAddMealProductForm,
+
+    UpdateMealProductFormMealProduct(Option<MealProductId>),
+    UpdateMealProductFormWeight(String),
+    SubmitUpdateMealProductForm,
+
+    DeleteMealProduct(MealProductId),
 }
 
 pub struct App {
@@ -53,8 +68,9 @@ pub struct App {
     meals: Vec<Meal>,
 
     create_product_form: CreateUpdateProductForm,
-    update_product_form: Option<(usize, CreateUpdateProductForm)>,
+    update_product_form: Option<(ProductId, CreateUpdateProductForm)>,
     add_meal_product_form: Option<MealProductForm>,
+    update_meal_product_form: Option<UpdateMealProductForm>,
 }
 
 impl App {
@@ -73,6 +89,7 @@ impl App {
             create_product_form: CreateUpdateProductForm::new(),
             update_product_form: None,
             add_meal_product_form: None,
+            update_meal_product_form: None,
         }
     }
 
@@ -89,8 +106,8 @@ impl App {
     pub fn update(&mut self, message: Message) {
         match message {
             Message::ChangeScreen(s) => match s {
-                Screen::UpdateProduct(id) => {
-                    let p = self.data.product.read(id).unwrap();
+                Screen::UpdateProduct(product_id) => {
+                    let p = self.data.product.read(product_id).unwrap();
                     let form = CreateUpdateProductForm::new_filled(
                         &p.name,
                         &p.company.unwrap_or("".to_string()),
@@ -100,57 +117,57 @@ impl App {
                         &p.carbohydrates.to_string(),
                     );
 
-                    self.update_product_form = Some((id, form));
-                    self.screen = Screen::UpdateProduct(id);
+                    self.update_product_form = Some((product_id, form));
+                    self.screen = Screen::UpdateProduct(product_id);
                 }
                 _ => self.screen = s,
             },
-            Message::UpdateCreateProductFormName(s) => {
+            Message::UpdateCreateProductFormName(name) => {
                 if self.screen == Screen::CreateProduct {
-                    self.create_product_form.name.raw_input = s;
+                    self.create_product_form.name.raw_input = name;
                 } else {
                     let (_, form) = &mut self.update_product_form.as_mut().unwrap();
-                    form.name.raw_input = s;
+                    form.name.raw_input = name;
                 }
             }
-            Message::UpdateCreateProductFormCompany(s) => {
+            Message::UpdateCreateProductFormCompany(company) => {
                 if self.screen == Screen::CreateProduct {
-                    self.create_product_form.company.raw_input = s;
+                    self.create_product_form.company.raw_input = company;
                 } else {
                     let (_, form) = &mut self.update_product_form.as_mut().unwrap();
-                    form.company.raw_input = s;
+                    form.company.raw_input = company;
                 }
             }
-            Message::UpdateCreateProductFormCalories(s) => {
+            Message::UpdateCreateProductFormCalories(raw_calories) => {
                 if self.screen == Screen::CreateProduct {
-                    self.create_product_form.calories.raw_input = s;
+                    self.create_product_form.calories.raw_input = raw_calories;
                 } else {
                     let (_, form) = &mut self.update_product_form.as_mut().unwrap();
-                    form.calories.raw_input = s;
+                    form.calories.raw_input = raw_calories;
                 }
             }
-            Message::UpdateCreateProductFormFats(s) => {
+            Message::UpdateCreateProductFormFats(raw_fats) => {
                 if self.screen == Screen::CreateProduct {
-                    self.create_product_form.fats.raw_input = s;
+                    self.create_product_form.fats.raw_input = raw_fats;
                 } else {
                     let (_, form) = &mut self.update_product_form.as_mut().unwrap();
-                    form.fats.raw_input = s;
+                    form.fats.raw_input = raw_fats;
                 }
             }
-            Message::UpdateCreateProductFormProteins(s) => {
+            Message::UpdateCreateProductFormProteins(raw_proteins) => {
                 if self.screen == Screen::CreateProduct {
-                    self.create_product_form.proteins.raw_input = s;
+                    self.create_product_form.proteins.raw_input = raw_proteins;
                 } else {
                     let (_, form) = &mut self.update_product_form.as_mut().unwrap();
-                    form.proteins.raw_input = s;
+                    form.proteins.raw_input = raw_proteins;
                 }
             }
-            Message::UpdateCreateProductFormCarbohydrates(s) => {
+            Message::UpdateCreateProductFormCarbohydrates(raw_carbohydrates) => {
                 if self.screen == Screen::CreateProduct {
-                    self.create_product_form.carbohydrates.raw_input = s;
+                    self.create_product_form.carbohydrates.raw_input = raw_carbohydrates;
                 } else {
                     let (_, form) = &mut self.update_product_form.as_mut().unwrap();
-                    form.carbohydrates.raw_input = s;
+                    form.carbohydrates.raw_input = raw_carbohydrates;
                 }
             }
             Message::SubmitCreateProductForm => {
@@ -177,10 +194,10 @@ impl App {
                 };
             }
             Message::SubmitUpdateProductForm => {
-                let (id, form) = &mut self.update_product_form.as_mut().unwrap();
+                let (product_id, form) = &mut self.update_product_form.as_mut().unwrap();
 
                 if let Ok(product) = form.parse() {
-                    if let Some(err) = self.data.product.update(*id, product).err() {
+                    if let Some(err) = self.data.product.update(*product_id, product).err() {
                         match err {
                             DataError::UniqueConstraintViolation(unique_field)
                                 if unique_field == "products.name" =>
@@ -200,11 +217,11 @@ impl App {
                     }
                 };
             }
-            Message::DeleteProduct(id) => {
-                self.data.product.delete(id).unwrap();
+            Message::DeleteProduct(product_id) => {
+                self.data.product.delete(product_id).unwrap();
                 self.refresh_products();
             }
-            Message::UpdateAddMealProductFormMeal(meal_id) => match meal_id {
+            Message::CreateMealProductFormMeal(meal_id) => match meal_id {
                 Some(id) => {
                     let meal = self.data.meal.read(id).unwrap();
                     self.add_meal_product_form = Some(MealProductForm::new(&self.products, &meal));
@@ -213,21 +230,51 @@ impl App {
                     self.add_meal_product_form = None;
                 }
             },
-            Message::UpdateAddMealProductFormWeight(s) => {
+            Message::CreateMealProductFormWeight(raw_weight) => {
                 let form = &mut self.add_meal_product_form.as_mut().unwrap();
-                form.weight.raw_input = s;
+                form.weight.raw_input = raw_weight;
             }
-            Message::UpdateAddMealProductFormProduct(id) => {
+            Message::CreateMealProductFormProduct(product_id) => {
                 let form = &mut self.add_meal_product_form.as_mut().unwrap();
-                form.product_id = Some(id);
+                form.product_id = Some(product_id);
             }
             Message::SubmitAddMealProductForm => {
-                let form = &mut self.add_meal_product_form.as_mut().unwrap();
-                let add_meal_product = form.parse().unwrap();
-                self.data.meal.add_product(add_meal_product).unwrap();
+                if let Ok(add_meal_product) = self.add_meal_product_form.as_mut().unwrap().parse() {
+                    self.data.meal.add_product(add_meal_product).unwrap();
 
+                    self.refresh_meals();
+                    self.add_meal_product_form = None;
+                }
+            }
+            Message::UpdateMealProductFormMealProduct(meal_product_id) => match meal_product_id {
+                Some(id) => {
+                    let meal_product = self.data.meal.read_product(id).unwrap();
+                    self.update_meal_product_form = Some(UpdateMealProductForm::new(&meal_product));
+                }
+                None => {
+                    self.update_meal_product_form = None;
+                }
+            },
+            Message::UpdateMealProductFormWeight(raw_weight) => {
+                let form = &mut self.update_meal_product_form.as_mut().unwrap();
+                form.weight.raw_input = raw_weight;
+            }
+            Message::SubmitUpdateMealProductForm => {
+                if let Ok(update_meal_product_weight) =
+                    self.update_meal_product_form.as_mut().unwrap().parse()
+                {
+                    self.data
+                        .meal
+                        .update_product_weight(update_meal_product_weight)
+                        .unwrap();
+
+                    self.refresh_meals();
+                    self.update_meal_product_form = None;
+                }
+            }
+            Message::DeleteMealProduct(meal_product_id) => {
+                self.data.meal.delete_product(meal_product_id).unwrap();
                 self.refresh_meals();
-                self.add_meal_product_form = None;
             }
         }
     }
@@ -297,16 +344,23 @@ impl App {
             .padding(20)
             .spacing(20);
 
-        match &self.add_meal_product_form {
-            Some(form) => self
+        match (&self.add_meal_product_form, &self.update_meal_product_form) {
+            (Some(add_form), None) => self
                 .modal(
                     content_with_sidebar.into(),
-                    render_add_product_to_meal_form(&form),
-                    Message::UpdateAddMealProductFormMeal(None),
+                    render_add_product_to_meal_form(&add_form),
+                    Message::CreateMealProductFormMeal(None),
                 )
                 .into(),
-
-            None => content_with_sidebar.into(),
+            (None, Some(update_form)) => self
+                .modal(
+                    content_with_sidebar.into(),
+                    render_update_meal_product_form(&update_form),
+                    Message::UpdateMealProductFormMealProduct(None),
+                )
+                .into(),
+            (Some(_), Some(_)) => panic!("Both add and update meal product forms found"),
+            (None, None) => content_with_sidebar.into(),
         }
     }
 

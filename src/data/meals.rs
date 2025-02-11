@@ -143,15 +143,15 @@ impl MealData {
 
     pub fn update_product_weight(
         &self,
-        update_product_weight: UpdateMealProductWeight,
+        update_meal_product_weight: UpdateMealProductWeight,
     ) -> Result<(), DataError> {
         let query = "
             UPDATE meal_products
             SET weight = ?1
             WHERE id = ?2";
         let args = params![
-            update_product_weight.weight,
-            update_product_weight.meal_product_id,
+            update_meal_product_weight.weight,
+            update_meal_product_weight.meal_product_id,
         ];
 
         let db = self.db.borrow();
@@ -232,6 +232,40 @@ impl MealData {
         Ok(meal)
     }
 
+    pub fn read_product(&self, meal_product_id: usize) -> Result<MealProduct, DataError> {
+        let query = "
+            SELECT
+    			meal_products.id,
+    			meal_products.weight,
+    			products.name,
+    			products.company,
+    			products.calories * meal_products.weight / 100,
+    			products.fats * meal_products.weight / 100,
+    			products.proteins * meal_products.weight / 100,
+    			products.carbohydrates * meal_products.weight / 100
+    		FROM meal_products
+    		LEFT JOIN products ON meal_products.product_id = products.id
+    		WHERE meal_products.id = ?1";
+        let args = params![meal_product_id];
+
+        let db = self.db.borrow();
+        let mut stmt = db.prepare(query)?;
+
+        stmt.query_row(args, |row| {
+            Ok(MealProduct {
+                id: row.get(0)?,
+                weight: row.get(1)?,
+                name: row.get(2)?,
+                company: row.get(3)?,
+                calories: row.get(4)?,
+                fats: row.get(5)?,
+                proteins: row.get(6)?,
+                carbohydrates: row.get(7)?,
+            })
+        })
+        .map_err(DataError::from)
+    }
+
     pub fn list(&self, day: NaiveDate) -> Result<Vec<Meal>, DataError> {
         let query = "
             SELECT
@@ -305,6 +339,19 @@ impl MealData {
         sorted_meals.sort();
 
         Ok(sorted_meals)
+    }
+
+    pub fn delete(&self, id: usize) -> Result<(), DataError> {
+        let query = "
+            DELETE FROM meal_products
+    	    WHERE id = ?1";
+        let args = params![id];
+
+        let db = self.db.borrow();
+        let mut stmt = db.prepare(query)?;
+        stmt.execute(args).map_err(DataError::from)?;
+
+        Ok(())
     }
 
     pub fn day_stats(&self, day: NaiveDate) -> Result<DayStats, DataError> {

@@ -40,10 +40,10 @@ fn list_row(p: &Product, even: bool) -> Element<Message> {
         Text::new(format!("{}", p.id)).width(Length::Fill),
         Text::new(&p.name).width(Length::Fill),
         Text::new(p.company.as_deref().unwrap_or("-")).width(Length::Fill),
-        Text::new(format!("{:.2}", p.calories)).width(Length::Fill),
-        Text::new(format!("{:.2}", p.fats)).width(Length::Fill),
-        Text::new(format!("{:.2}", p.proteins)).width(Length::Fill),
-        Text::new(format!("{:.2}", p.carbohydrates)).width(Length::Fill),
+        Text::new(format!("{:.1}", p.calories)).width(Length::Fill),
+        Text::new(format!("{:.1}", p.fats)).width(Length::Fill),
+        Text::new(format!("{:.1}", p.proteins)).width(Length::Fill),
+        Text::new(format!("{:.1}", p.carbohydrates)).width(Length::Fill),
         row![
             Button::new("Update").on_press(Message::ChangeScreen(Screen::UpdateProduct(p.id))),
             Button::new("Delete").on_press(Message::DeleteProduct(p.id))

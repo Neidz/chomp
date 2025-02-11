@@ -9,7 +9,7 @@ mod meals;
 mod product;
 
 pub use error::DataError;
-pub use meals::{AddMealProduct, Meal, MealProduct};
+pub use meals::{AddMealProduct, Meal, MealProduct, UpdateMealProductWeight};
 pub use product::{CreateUpdateProduct, Product};
 
 pub struct Data {

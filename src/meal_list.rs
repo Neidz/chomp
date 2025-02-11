@@ -23,8 +23,7 @@ fn render_meal(meal: &Meal) -> Element<Message> {
         row![
             Text::new(&meal.name).size(20),
             horizontal_space(),
-            Button::new("Add Product")
-                .on_press(Message::UpdateAddMealProductFormMeal(Some(meal.id)))
+            Button::new("Add Product").on_press(Message::CreateMealProductFormMeal(Some(meal.id)))
         ],
         list_header_row()
     ];
@@ -55,12 +54,17 @@ fn list_header_row() -> Element<'static, Message> {
 fn list_row(mp: &MealProduct, even: bool) -> Element<Message> {
     let row = row![
         Text::new(&mp.name).width(Length::Fill),
-        Text::new(format!("{:.2}", mp.weight)).width(Length::Fill),
-        Text::new(format!("{:.2}", mp.calories)).width(Length::Fill),
-        Text::new(format!("{:.2}", mp.fats)).width(Length::Fill),
-        Text::new(format!("{:.2}", mp.proteins)).width(Length::Fill),
-        Text::new(format!("{:.2}", mp.carbohydrates)).width(Length::Fill),
-        row![].spacing(10).width(Length::Fill)
+        Text::new(format!("{:.1}", mp.weight)).width(Length::Fill),
+        Text::new(format!("{:.1}", mp.calories)).width(Length::Fill),
+        Text::new(format!("{:.1}", mp.fats)).width(Length::Fill),
+        Text::new(format!("{:.1}", mp.proteins)).width(Length::Fill),
+        Text::new(format!("{:.1}", mp.carbohydrates)).width(Length::Fill),
+        row![
+            Button::new("Update").on_press(Message::UpdateMealProductFormMealProduct(Some(mp.id))),
+            Button::new("Delete").on_press(Message::DeleteMealProduct(mp.id))
+        ]
+        .spacing(10)
+        .width(Length::Fill)
     ]
     .padding(10)
     .width(Length::Fill);
