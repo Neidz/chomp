@@ -345,20 +345,16 @@ impl App {
             .spacing(20);
 
         match (&self.add_meal_product_form, &self.update_meal_product_form) {
-            (Some(add_form), None) => self
-                .modal(
-                    content_with_sidebar.into(),
-                    render_add_product_to_meal_form(&add_form),
-                    Message::CreateMealProductFormMeal(None),
-                )
-                .into(),
-            (None, Some(update_form)) => self
-                .modal(
-                    content_with_sidebar.into(),
-                    render_update_meal_product_form(&update_form),
-                    Message::UpdateMealProductFormMealProduct(None),
-                )
-                .into(),
+            (Some(add_form), None) => self.modal(
+                content_with_sidebar.into(),
+                render_add_product_to_meal_form(add_form),
+                Message::CreateMealProductFormMeal(None),
+            ),
+            (None, Some(update_form)) => self.modal(
+                content_with_sidebar.into(),
+                render_update_meal_product_form(update_form),
+                Message::UpdateMealProductFormMealProduct(None),
+            ),
             (Some(_), Some(_)) => panic!("Both add and update meal product forms found"),
             (None, None) => content_with_sidebar.into(),
         }
@@ -412,19 +408,17 @@ impl App {
             ("Product List", Message::ChangeScreen(Screen::ProductList)),
         ];
 
-        Column::from(
-            buttons
-                .into_iter()
-                .map(|(content, message)| {
-                    Button::new(content)
-                        .on_press(message)
-                        .width(Length::Fill)
-                        .into()
-                })
-                .collect(),
-        )
-        .width(200)
-        .spacing(10)
-        .into()
+        buttons
+            .into_iter()
+            .map(|(content, message)| {
+                Button::new(content)
+                    .on_press(message)
+                    .width(Length::Fill)
+                    .into()
+            })
+            .collect::<Column<Message>>()
+            .width(200)
+            .spacing(10)
+            .into()
     }
 }

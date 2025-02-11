@@ -134,22 +134,15 @@ impl CreateUpdateProductForm {
 
 pub fn render_product_form(form: &CreateUpdateProductForm) -> Element<Message> {
     column![
-        render_input_form_field(&form.name, |s| Message::UpdateCreateProductFormName(s)),
-        render_input_form_field(&form.company, |s| Message::UpdateCreateProductFormCompany(
-            s
-        )),
+        render_input_form_field(&form.name, Message::UpdateCreateProductFormName),
+        render_input_form_field(&form.company, Message::UpdateCreateProductFormCompany),
+        render_input_form_field(&form.calories, Message::UpdateCreateProductFormCalories),
+        render_input_form_field(&form.fats, Message::UpdateCreateProductFormFats),
+        render_input_form_field(&form.proteins, Message::UpdateCreateProductFormProteins),
         render_input_form_field(
-            &form.calories,
-            |s| Message::UpdateCreateProductFormCalories(s)
+            &form.carbohydrates,
+            Message::UpdateCreateProductFormCarbohydrates
         ),
-        render_input_form_field(&form.fats, |s| Message::UpdateCreateProductFormFats(s)),
-        render_input_form_field(
-            &form.proteins,
-            |s| Message::UpdateCreateProductFormProteins(s)
-        ),
-        render_input_form_field(&form.carbohydrates, |s| {
-            Message::UpdateCreateProductFormCarbohydrates(s)
-        }),
     ]
     .spacing(10)
     .into()

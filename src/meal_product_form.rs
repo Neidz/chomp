@@ -83,7 +83,7 @@ pub fn render_add_product_to_meal_form(form: &MealProductForm) -> Element<Messag
         column![
             Text::new(format!("Add product to {}", form.meal.name)).size(30),
             combo_box,
-            render_input_form_field(&form.weight, |w| Message::CreateMealProductFormWeight(w)),
+            render_input_form_field(&form.weight, Message::CreateMealProductFormWeight),
             Button::new("Add Product")
                 .width(Length::Fill)
                 .on_press(Message::SubmitAddMealProductForm),
@@ -141,7 +141,7 @@ pub fn render_update_meal_product_form(form: &UpdateMealProductForm) -> Element<
     container(
         column![
             Text::new(format!("Edit weight of {}", form.meal_product.name)).size(30),
-            render_input_form_field(&form.weight, |w| Message::UpdateMealProductFormWeight(w)),
+            render_input_form_field(&form.weight, Message::UpdateMealProductFormWeight),
             Button::new("Update weight")
                 .width(Length::Fill)
                 .on_press(Message::SubmitUpdateMealProductForm),

@@ -11,7 +11,7 @@ use crate::{
 
 pub fn render_meal_list(meals: &[Meal]) -> Element<Message> {
     let mut tables = column![].spacing(10);
-    for (_, meal) in meals.iter().enumerate() {
+    for meal in meals.iter() {
         tables = tables.push(render_meal(meal))
     }
 
