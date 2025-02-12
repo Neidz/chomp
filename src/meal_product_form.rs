@@ -22,13 +22,15 @@ pub struct MealProductForm {
 
 impl MealProductForm {
     pub fn new(products: &[Product], meal: &Meal) -> Self {
-        let meal_product_ids: HashSet<usize> = meal.products.iter().map(|mp| mp.id).collect();
+        let meal_product_names: HashSet<String> =
+            meal.products.iter().map(|mp| mp.name.clone()).collect();
 
         let mut products_not_in_meal: Vec<Product> = products
             .iter()
-            .filter(|p| !meal_product_ids.contains(&p.id))
+            .filter(|p| !meal_product_names.contains(&p.name))
             .cloned()
             .collect();
+
         products_not_in_meal.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
 
         MealProductForm {

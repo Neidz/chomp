@@ -81,11 +81,11 @@ pub struct CreateMeal {
 }
 
 #[derive(Debug)]
-pub struct DayStats {
-    pub calories: f64,
-    pub proteins: f64,
-    pub fats: f64,
-    pub carbohydrates: f64,
+pub struct MealDayStats {
+    pub calories: f32,
+    pub proteins: f32,
+    pub fats: f32,
+    pub carbohydrates: f32,
 }
 
 #[allow(unused)]
@@ -354,7 +354,7 @@ impl MealData {
         Ok(())
     }
 
-    pub fn day_stats(&self, day: NaiveDate) -> Result<DayStats, DataError> {
+    pub fn day_stats(&self, day: NaiveDate) -> Result<MealDayStats, DataError> {
         let query = "
             SELECT
                 COALESCE(SUM(products.calories * meal_products.weight / 100), 0) AS total_calories,
@@ -372,7 +372,7 @@ impl MealData {
         let mut stmt = db.prepare(query)?;
 
         stmt.query_row(args, |row| {
-            Ok(DayStats {
+            Ok(MealDayStats {
                 calories: row.get(0)?,
                 fats: row.get(1)?,
                 proteins: row.get(2)?,

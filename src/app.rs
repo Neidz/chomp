@@ -1,16 +1,20 @@
 use core::panic;
 
-use chrono::{Local, NaiveDate};
+use chrono::{Days, Local, NaiveDate};
 use iced::{
-    widget::{center, column, container, mouse_area, opaque, row, stack, Button, Column, Text},
+    widget::{
+        center, column, container, horizontal_space, mouse_area, opaque, row, stack,
+        vertical_space, Button, Column, Text,
+    },
+    Alignment::Center,
     Color, Element, Length,
 };
 use rusqlite::Connection;
 
 use crate::{
-    data::{Data, DataError, Meal, Product},
+    data::{Data, DataError, Meal, MealDayStats, Product},
     form_field::InputFormFieldError,
-    meal_list::render_meal_list,
+    meal_list::{meal_stats, render_meal_list},
     meal_product_form::{
         render_add_product_to_meal_form, render_update_meal_product_form, MealProductForm,
         UpdateMealProductForm,
@@ -35,6 +39,9 @@ pub enum Screen {
 #[derive(Debug, Clone)]
 pub enum Message {
     ChangeScreen(Screen),
+
+    NextDay,
+    PrevDay,
 
     UpdateCreateProductFormName(String),
     UpdateCreateProductFormCompany(String),
@@ -66,6 +73,7 @@ pub struct App {
 
     products: Vec<Product>,
     meals: Vec<Meal>,
+    meal_day_stats: MealDayStats,
 
     create_product_form: CreateUpdateProductForm,
     update_product_form: Option<(ProductId, CreateUpdateProductForm)>,
@@ -79,6 +87,7 @@ impl App {
         let data = Data::new(db);
         let products = data.product.list().unwrap();
         let meals = data.meal.list_or_create_default(day).unwrap();
+        let meal_day_stats = data.meal.day_stats(day).unwrap();
 
         App {
             data,
@@ -86,6 +95,7 @@ impl App {
             day,
             products: products.clone(),
             meals,
+            meal_day_stats,
             create_product_form: CreateUpdateProductForm::new(),
             update_product_form: None,
             add_meal_product_form: None,
@@ -276,6 +286,14 @@ impl App {
                 self.data.meal.delete_product(meal_product_id).unwrap();
                 self.refresh_meals();
             }
+            Message::PrevDay => {
+                self.day = self.day.checked_sub_days(Days::new(1)).unwrap();
+                self.refresh_meals();
+            }
+            Message::NextDay => {
+                self.day = self.day.checked_add_days(Days::new(1)).unwrap();
+                self.refresh_meals();
+            }
         }
     }
 
@@ -336,8 +354,13 @@ impl App {
     }
 
     fn meals_screen(&self) -> Element<Message> {
-        let content =
-            column![Text::new("Meals").size(40), render_meal_list(&self.meals)].spacing(10);
+        let content = column![
+            Text::new("Meals").size(40),
+            render_meal_list(&self.meals),
+            vertical_space(),
+            meal_stats(&self.meal_day_stats)
+        ]
+        .spacing(10);
 
         let content_with_sidebar = row![self.sidebar(), content]
             .height(Length::Fill)
@@ -367,6 +390,7 @@ impl App {
 
     fn refresh_meals(&mut self) {
         self.meals = self.data.meal.list_or_create_default(self.day).unwrap();
+        self.meal_day_stats = self.data.meal.day_stats(self.day).unwrap();
     }
 
     fn modal<'a>(
@@ -408,7 +432,7 @@ impl App {
             ("Product List", Message::ChangeScreen(Screen::ProductList)),
         ];
 
-        buttons
+        let navigation = buttons
             .into_iter()
             .map(|(content, message)| {
                 Button::new(content)
@@ -418,7 +442,29 @@ impl App {
             })
             .collect::<Column<Message>>()
             .width(200)
-            .spacing(10)
-            .into()
+            .spacing(10);
+
+        let today = Local::now().date_naive();
+        let tomorrow = today.checked_add_days(Days::new(1)).unwrap();
+        let yesterday = today.checked_sub_days(Days::new(1)).unwrap();
+
+        let formatted_day = match self.day {
+            d if d == today => "Today".to_string(),
+            d if d == tomorrow => "Tomorrow".to_string(),
+            d if d == yesterday => "Yesterday".to_string(),
+            _ => self.day.format("%Y-%m-%d").to_string(),
+        };
+        let day_row = row![
+            Button::new("<").on_press(Message::PrevDay),
+            horizontal_space(),
+            Text::new(format!("{}", formatted_day)).size(20),
+            horizontal_space(),
+            Button::new(">").on_press(Message::NextDay),
+        ]
+        .align_y(Center)
+        .width(200)
+        .spacing(10);
+
+        column![navigation, vertical_space(), day_row].into()
     }
 }

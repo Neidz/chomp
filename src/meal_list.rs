@@ -1,11 +1,12 @@
 use iced::{
-    widget::{column, horizontal_space, row, Button, Container, Scrollable, Text},
+    widget::{column, progress_bar, row, Button, Container, Scrollable, Text},
+    Alignment::Center,
     Element, Length,
 };
 
 use crate::{
     app::Message,
-    data::{Meal, MealProduct},
+    data::{Meal, MealDayStats, MealProduct},
     style::TableRowStyle,
 };
 
@@ -22,9 +23,9 @@ fn render_meal(meal: &Meal) -> Element<Message> {
     let mut table = column![
         row![
             Text::new(&meal.name).size(20),
-            horizontal_space(),
             Button::new("Add Product").on_press(Message::CreateMealProductFormMeal(Some(meal.id)))
-        ],
+        ]
+        .spacing(10),
         list_header_row()
     ];
 
@@ -79,4 +80,26 @@ fn list_row(mp: &MealProduct, even: bool) -> Element<Message> {
             }
         })
         .into()
+}
+
+pub fn meal_stats(stats: &MealDayStats) -> Element<Message> {
+    row![
+        meal_stat("Calories", stats.calories, 2500.0),
+        meal_stat("Proteins", stats.proteins, 200.0),
+        meal_stat("Fats", stats.fats, 60.0),
+        meal_stat("Carbohydrates", stats.carbohydrates, 300.0)
+    ]
+    .spacing(40)
+    .width(Length::Fill)
+    .into()
+}
+
+fn meal_stat(label: &str, value: f32, max_value: f32) -> Element<Message> {
+    column![
+        Text::new(format!("{} {:.1}/{:.1}", label, value, max_value)),
+        progress_bar(0.0..=100.0, value / max_value * 100.0),
+    ]
+    .align_x(Center)
+    .spacing(2)
+    .into()
 }

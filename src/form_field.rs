@@ -95,7 +95,8 @@ where
     let mut column = column![
         Text::new(&field.name),
         TextInput::new(&field.placeholder, &field.raw_input).on_input(handle_message)
-    ];
+    ]
+    .spacing(2);
 
     if let Some(err) = &field.error {
         column = column.push(Text::new(err.to_string()).color(Color::from_rgb(1.0, 0.0, 0.0)));
