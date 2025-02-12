@@ -457,7 +457,7 @@ impl App {
         let day_row = row![
             Button::new("<").on_press(Message::PrevDay),
             horizontal_space(),
-            Text::new(format!("{}", formatted_day)).size(20),
+            Text::new(formatted_day).size(20),
             horizontal_space(),
             Button::new(">").on_press(Message::NextDay),
         ]
