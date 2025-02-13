@@ -1,5 +1,3 @@
-use core::panic;
-
 use chrono::{Days, Local, NaiveDate};
 use iced::{
     widget::{
@@ -16,7 +14,8 @@ use crate::{
     form_field::InputFormFieldError,
     meal_list::{meal_stats, render_meal_list},
     meal_product_form::{
-        render_add_product_to_meal_form, render_update_meal_product_form, MealProductForm,
+        render_add_product_to_meal_form, render_copy_meal_products_form,
+        render_update_meal_product_form, CopyMealProductsForm, MealProductForm,
         UpdateMealProductForm,
     },
     product_form::{render_product_form, CreateUpdateProductForm},
@@ -64,6 +63,10 @@ pub enum Message {
     SubmitUpdateMealProductForm,
 
     DeleteMealProduct(MealProductId),
+
+    CopyMealProductsMeal(Option<MealId>),
+    CopyMealProductsFromDay(NaiveDate),
+    SubmitCopyMealProductsForm,
 }
 
 pub struct App {
@@ -79,6 +82,7 @@ pub struct App {
     update_product_form: Option<(ProductId, CreateUpdateProductForm)>,
     add_meal_product_form: Option<MealProductForm>,
     update_meal_product_form: Option<UpdateMealProductForm>,
+    copy_meal_products_form: Option<CopyMealProductsForm>,
 }
 
 impl App {
@@ -100,6 +104,7 @@ impl App {
             update_product_form: None,
             add_meal_product_form: None,
             update_meal_product_form: None,
+            copy_meal_products_form: None,
         }
     }
 
@@ -294,6 +299,43 @@ impl App {
                 self.day = self.day.checked_add_days(Days::new(1)).unwrap();
                 self.refresh_meals();
             }
+            Message::CopyMealProductsMeal(meal_id) => match meal_id {
+                Some(id) => {
+                    let meal = self.data.meal.read(id).unwrap();
+                    let prev_day = meal.day.checked_sub_days(Days::new(1)).unwrap();
+                    let prev_day_meal = self.data.meal.read_by_day_and_name(prev_day, &meal.name);
+
+                    let meal_products = prev_day_meal.map(|m| m.products).unwrap_or_default();
+
+                    self.copy_meal_products_form =
+                        Some(CopyMealProductsForm::new(&meal_products, &prev_day, &meal));
+                }
+                None => self.copy_meal_products_form = None,
+            },
+            Message::CopyMealProductsFromDay(new_day) => {
+                let form = &mut self.copy_meal_products_form.as_mut().unwrap();
+
+                let new_products = self
+                    .data
+                    .meal
+                    .read_by_day_and_name(new_day, &form.target_meal.name)
+                    .map(|m| m.products)
+                    .unwrap_or_default();
+
+                form.from_day = new_day;
+                form.meal_products = new_products;
+            }
+            Message::SubmitCopyMealProductsForm => {
+                if let Ok(add_meal_products) =
+                    self.copy_meal_products_form.as_mut().unwrap().parse()
+                {
+                    add_meal_products.into_iter().for_each(|add_meal_product| {
+                        let _ = self.data.meal.add_product(add_meal_product);
+                    });
+                    self.refresh_meals();
+                    self.copy_meal_products_form = None;
+                }
+            }
         }
     }
 
@@ -367,20 +409,31 @@ impl App {
             .padding(20)
             .spacing(20);
 
-        match (&self.add_meal_product_form, &self.update_meal_product_form) {
-            (Some(add_form), None) => self.modal(
+        if let Some(add_form) = &self.add_meal_product_form {
+            return self.modal(
                 content_with_sidebar.into(),
                 render_add_product_to_meal_form(add_form),
                 Message::CreateMealProductFormMeal(None),
-            ),
-            (None, Some(update_form)) => self.modal(
+            );
+        }
+
+        if let Some(update_form) = &self.update_meal_product_form {
+            return self.modal(
                 content_with_sidebar.into(),
                 render_update_meal_product_form(update_form),
                 Message::UpdateMealProductFormMealProduct(None),
-            ),
-            (Some(_), Some(_)) => panic!("Both add and update meal product forms found"),
-            (None, None) => content_with_sidebar.into(),
+            );
         }
+
+        if let Some(copy_form) = &self.copy_meal_products_form {
+            return self.modal(
+                content_with_sidebar.into(),
+                render_copy_meal_products_form(copy_form),
+                Message::CopyMealProductsMeal(None),
+            );
+        }
+
+        content_with_sidebar.into()
     }
 
     fn refresh_products(&mut self) {

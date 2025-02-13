@@ -1,7 +1,9 @@
 use std::collections::HashSet;
 
+use chrono::{Days, Local, NaiveDate};
 use iced::{
-    widget::{column, combo_box, container, Button, Text},
+    widget::{column, combo_box, container, horizontal_space, row, Button, Text},
+    Alignment::Center,
     Element, Length,
 };
 
@@ -144,12 +146,100 @@ pub fn render_update_meal_product_form(form: &UpdateMealProductForm) -> Element<
         column![
             Text::new(format!("Edit weight of {}", form.meal_product.name)).size(30),
             render_input_form_field(&form.weight, Message::UpdateMealProductFormWeight),
-            Button::new("Update weight")
+            Button::new("Update Weight")
                 .width(Length::Fill)
                 .on_press(Message::SubmitUpdateMealProductForm),
             Button::new("Cancel")
                 .width(Length::Fill)
                 .on_press(Message::UpdateMealProductFormMealProduct(None))
+        ]
+        .spacing(10),
+    )
+    .width(300)
+    .padding(30)
+    .style(container::rounded_box)
+    .into()
+}
+
+#[derive(Debug)]
+pub struct CopyMealProductsForm {
+    pub target_meal: Meal,
+    pub meal_products: Vec<MealProduct>,
+    pub from_day: NaiveDate,
+}
+
+impl CopyMealProductsForm {
+    pub fn new(meal_products: &Vec<MealProduct>, from_day: &NaiveDate, to_meal: &Meal) -> Self {
+        CopyMealProductsForm {
+            target_meal: to_meal.to_owned(),
+            meal_products: meal_products.to_owned(),
+            from_day: from_day.to_owned(),
+        }
+    }
+
+    pub fn parse(&mut self) -> Result<Vec<AddMealProduct>, String> {
+        Ok(self
+            .meal_products
+            .iter()
+            .map(|mp| AddMealProduct {
+                meal_id: self.target_meal.id,
+                product_id: mp.id,
+                weight: mp.weight,
+            })
+            .collect())
+    }
+}
+
+pub fn render_copy_meal_products_form(form: &CopyMealProductsForm) -> Element<Message> {
+    let today = Local::now().date_naive();
+    let tomorrow = today.checked_add_days(Days::new(1)).unwrap();
+    let yesterday = today.checked_sub_days(Days::new(1)).unwrap();
+
+    let formatted_from_day = match form.from_day {
+        d if d == today => "Today".to_string(),
+        d if d == tomorrow => "Tomorrow".to_string(),
+        d if d == yesterday => "Yesterday".to_string(),
+        d => d.format("%Y-%m-%d").to_string(),
+    };
+
+    let formatted_target_day = match form.target_meal.day {
+        d if d == today => "Today".to_string(),
+        d if d == tomorrow => "Tomorrow".to_string(),
+        d if d == yesterday => "Yesterday".to_string(),
+        d => d.format("%Y-%m-%d").to_string(),
+    };
+
+    let day_row = row![
+        Button::new("<").on_press(Message::CopyMealProductsFromDay(
+            form.from_day.checked_sub_days(Days::new(1)).unwrap()
+        )),
+        horizontal_space(),
+        Text::new(formatted_from_day.clone()).size(20),
+        horizontal_space(),
+        Button::new(">").on_press(Message::CopyMealProductsFromDay(
+            form.from_day.checked_add_days(Days::new(1)).unwrap()
+        )),
+    ]
+    .align_y(Center)
+    .width(Length::Fill)
+    .spacing(10);
+
+    container(
+        column![
+            Text::new(format!(
+                "Copy {} products to {} {}",
+                form.meal_products.len(),
+                formatted_target_day,
+                form.target_meal.name
+            ))
+            .size(30),
+            day_row,
+            Button::new("Copy Meal")
+                .width(Length::Fill)
+                .on_press(Message::SubmitCopyMealProductsForm),
+            Button::new("Cancel")
+                .width(Length::Fill)
+                .on_press(Message::CopyMealProductsMeal(None))
         ]
         .spacing(10),
     )

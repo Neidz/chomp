@@ -11,7 +11,7 @@ use crate::{
 };
 
 pub fn render_meal_list(meals: &[Meal]) -> Element<Message> {
-    let mut tables = column![].spacing(10);
+    let mut tables = column![].spacing(20);
     for meal in meals.iter() {
         tables = tables.push(render_meal(meal))
     }
@@ -23,7 +23,9 @@ fn render_meal(meal: &Meal) -> Element<Message> {
     let mut table = column![
         row![
             Text::new(&meal.name).size(20),
-            Button::new("Add Product").on_press(Message::CreateMealProductFormMeal(Some(meal.id)))
+            Button::new("Add Product").on_press(Message::CreateMealProductFormMeal(Some(meal.id))),
+            Button::new("Copy From Different Day")
+                .on_press(Message::CopyMealProductsMeal(Some(meal.id)))
         ]
         .spacing(10),
         list_header_row()

@@ -232,6 +232,25 @@ impl MealData {
         Ok(meal)
     }
 
+    pub fn read_by_day_and_name(&self, day: NaiveDate, name: &str) -> Result<Meal, DataError> {
+        let meal_id = self.read_meal_id(day, name)?;
+        self.read(meal_id)
+    }
+
+    pub fn read_meal_id(&self, day: NaiveDate, name: &str) -> Result<usize, DataError> {
+        let query = "
+            SELECT meals.id
+    		FROM meals
+    		WHERE meals.day = ?1 AND name = ?2";
+        let args = params![day.format("%Y-%m-%d").to_string(), name];
+
+        let db = self.db.borrow();
+        let mut stmt = db.prepare(query)?;
+
+        stmt.query_row(args, |row| row.get(0))
+            .map_err(DataError::from)
+    }
+
     pub fn read_product(&self, meal_product_id: usize) -> Result<MealProduct, DataError> {
         let query = "
             SELECT
