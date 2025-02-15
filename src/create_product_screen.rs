@@ -59,10 +59,10 @@ impl CreateProductForm {
         CreateProductForm {
             name: InputFormField::new("Name*", "Chicken"),
             company: InputFormField::new("Company", "Chicken Inc."),
-            calories: InputFormField::new("Calories* (kcal)", "100.0"),
-            fats: InputFormField::new("Fats* (g)", "2.0"),
-            proteins: InputFormField::new("Proteins* (g)", "20.0"),
-            carbohydrates: InputFormField::new("Carbohydrates* (g)", "1.0"),
+            calories: InputFormField::new("Calories* (kcal/100g)", "100.0"),
+            fats: InputFormField::new("Fats* (g/100g)", "2.0"),
+            proteins: InputFormField::new("Proteins* (g/100g)", "20.0"),
+            carbohydrates: InputFormField::new("Carbohydrates* (g/100g)", "1.0"),
         }
     }
 

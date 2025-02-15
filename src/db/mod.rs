@@ -22,9 +22,9 @@ pub fn prepare_conn() -> Connection {
 
     let db_path: PathBuf = home
         .join(".local")
-        .join(".share")
+        .join("share")
         .join("chomp")
-        .join("data-egui.db");
+        .join("data-gui.db");
 
     std::fs::create_dir_all(db_path.parent().expect("Invalid database path"))
         .expect("Unable to create directories for db");
