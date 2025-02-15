@@ -1,36 +1,27 @@
 use chrono::{Days, Local, NaiveDate};
-use iced::{
-    widget::{
-        center, column, container, horizontal_space, mouse_area, opaque, row, stack,
-        vertical_space, Button, Column, Text,
-    },
-    Alignment::Center,
-    Color, Element, Length,
-};
+use iced::Element;
 use rusqlite::Connection;
 
 use crate::{
+    create_product_screen::{
+        render_create_product_screen, CreateProductForm, CreateProductMessage,
+    },
+    dashboard_screen::render_dashboard_screen,
     data::{Data, DataError, Meal, MealDayStats, Product},
     form_field::InputFormFieldError,
-    meal_list::{meal_stats, render_meal_list},
-    meal_product_form::{
-        render_add_product_to_meal_form, render_copy_meal_products_form,
-        render_update_meal_product_form, CopyMealProductsForm, MealProductForm,
-        UpdateMealProductForm,
+    meal_list_screen::{render_meal_list_screen, MealListMessage},
+    meal_product_form::{CopyMealProductsForm, MealProductForm, UpdateMealProductForm},
+    product_list_screen::{render_product_list_screen, ProductListMessage},
+    update_product_screen::{
+        render_update_product_screen, UpdateProductForm, UpdateProductMessage,
     },
-    product_form::{render_product_form, CreateUpdateProductForm},
-    product_list::render_product_list,
 };
-
-type MealId = usize;
-type MealProductId = usize;
-type ProductId = usize;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Screen {
-    Home,
+    Dashboard,
     CreateProduct,
-    UpdateProduct(ProductId),
+    UpdateProduct(usize),
     ProductList,
     MealList,
 }
@@ -42,47 +33,26 @@ pub enum Message {
     NextDay,
     PrevDay,
 
-    UpdateCreateProductFormName(String),
-    UpdateCreateProductFormCompany(String),
-    UpdateCreateProductFormCalories(String),
-    UpdateCreateProductFormFats(String),
-    UpdateCreateProductFormProteins(String),
-    UpdateCreateProductFormCarbohydrates(String),
-    SubmitCreateProductForm,
-    SubmitUpdateProductForm,
-
-    DeleteProduct(ProductId),
-
-    CreateMealProductFormMeal(Option<MealId>),
-    CreateMealProductFormWeight(String),
-    CreateMealProductFormProduct(ProductId),
-    SubmitAddMealProductForm,
-
-    UpdateMealProductFormMealProduct(Option<MealProductId>),
-    UpdateMealProductFormWeight(String),
-    SubmitUpdateMealProductForm,
-
-    DeleteMealProduct(MealProductId),
-
-    CopyMealProductsMeal(Option<MealId>),
-    CopyMealProductsFromDay(NaiveDate),
-    SubmitCopyMealProductsForm,
+    CreateProduct(CreateProductMessage),
+    UpdateProduct(UpdateProductMessage),
+    ProductList(ProductListMessage),
+    MealList(MealListMessage),
 }
 
 pub struct App {
-    data: Data,
-    screen: Screen,
-    day: NaiveDate,
+    pub data: Data,
+    pub day: NaiveDate,
+    pub screen: Screen,
 
-    products: Vec<Product>,
-    meals: Vec<Meal>,
-    meal_day_stats: MealDayStats,
+    pub products: Vec<Product>,
+    pub meals: Vec<Meal>,
+    pub meal_day_stats: MealDayStats,
 
-    create_product_form: CreateUpdateProductForm,
-    update_product_form: Option<(ProductId, CreateUpdateProductForm)>,
-    add_meal_product_form: Option<MealProductForm>,
-    update_meal_product_form: Option<UpdateMealProductForm>,
-    copy_meal_products_form: Option<CopyMealProductsForm>,
+    pub create_product_form: Option<CreateProductForm>,
+    pub update_product_form: Option<UpdateProductForm>,
+    pub add_meal_product_form: Option<MealProductForm>,
+    pub update_meal_product_form: Option<UpdateMealProductForm>,
+    pub copy_meal_products_form: Option<CopyMealProductsForm>,
 }
 
 impl App {
@@ -95,12 +65,12 @@ impl App {
 
         App {
             data,
-            screen: Screen::Home,
+            screen: Screen::Dashboard,
             day,
             products: products.clone(),
             meals,
             meal_day_stats,
-            create_product_form: CreateUpdateProductForm::new(),
+            create_product_form: None,
             update_product_form: None,
             add_meal_product_form: None,
             update_meal_product_form: None,
@@ -110,11 +80,11 @@ impl App {
 
     pub fn view(&self) -> Element<Message> {
         match self.screen {
-            Screen::Home => self.home_screen(),
-            Screen::CreateProduct => self.create_product_screen(),
-            Screen::ProductList => self.product_list_screen(),
-            Screen::MealList => self.meals_screen(),
-            Screen::UpdateProduct(_) => self.update_product_screen(),
+            Screen::Dashboard => render_dashboard_screen(self),
+            Screen::CreateProduct => render_create_product_screen(self),
+            Screen::ProductList => render_product_list_screen(self),
+            Screen::MealList => render_meal_list_screen(self),
+            Screen::UpdateProduct(_) => render_update_product_screen(self),
         }
     }
 
@@ -123,96 +93,64 @@ impl App {
             Message::ChangeScreen(s) => match s {
                 Screen::UpdateProduct(product_id) => {
                     let p = self.data.product.read(product_id).unwrap();
-                    let form = CreateUpdateProductForm::new_filled(
-                        &p.name,
-                        &p.company.unwrap_or("".to_string()),
-                        &p.calories.to_string(),
-                        &p.fats.to_string(),
-                        &p.proteins.to_string(),
-                        &p.carbohydrates.to_string(),
-                    );
+                    let form = UpdateProductForm::new(&p);
 
-                    self.update_product_form = Some((product_id, form));
+                    self.update_product_form = Some(form);
                     self.screen = Screen::UpdateProduct(product_id);
                 }
-                _ => self.screen = s,
+                Screen::CreateProduct => {
+                    let form = CreateProductForm::new();
+                    self.create_product_form = Some(form);
+                    self.screen = Screen::CreateProduct
+                }
+                s => self.screen = s,
             },
-            Message::UpdateCreateProductFormName(name) => {
-                if self.screen == Screen::CreateProduct {
-                    self.create_product_form.name.raw_input = name;
-                } else {
-                    let (_, form) = &mut self.update_product_form.as_mut().unwrap();
-                    form.name.raw_input = name;
-                }
-            }
-            Message::UpdateCreateProductFormCompany(company) => {
-                if self.screen == Screen::CreateProduct {
-                    self.create_product_form.company.raw_input = company;
-                } else {
-                    let (_, form) = &mut self.update_product_form.as_mut().unwrap();
-                    form.company.raw_input = company;
-                }
-            }
-            Message::UpdateCreateProductFormCalories(raw_calories) => {
-                if self.screen == Screen::CreateProduct {
-                    self.create_product_form.calories.raw_input = raw_calories;
-                } else {
-                    let (_, form) = &mut self.update_product_form.as_mut().unwrap();
-                    form.calories.raw_input = raw_calories;
-                }
-            }
-            Message::UpdateCreateProductFormFats(raw_fats) => {
-                if self.screen == Screen::CreateProduct {
-                    self.create_product_form.fats.raw_input = raw_fats;
-                } else {
-                    let (_, form) = &mut self.update_product_form.as_mut().unwrap();
-                    form.fats.raw_input = raw_fats;
-                }
-            }
-            Message::UpdateCreateProductFormProteins(raw_proteins) => {
-                if self.screen == Screen::CreateProduct {
-                    self.create_product_form.proteins.raw_input = raw_proteins;
-                } else {
-                    let (_, form) = &mut self.update_product_form.as_mut().unwrap();
-                    form.proteins.raw_input = raw_proteins;
-                }
-            }
-            Message::UpdateCreateProductFormCarbohydrates(raw_carbohydrates) => {
-                if self.screen == Screen::CreateProduct {
-                    self.create_product_form.carbohydrates.raw_input = raw_carbohydrates;
-                } else {
-                    let (_, form) = &mut self.update_product_form.as_mut().unwrap();
-                    form.carbohydrates.raw_input = raw_carbohydrates;
-                }
-            }
-            Message::SubmitCreateProductForm => {
-                if let Ok(product) = self.create_product_form.parse() {
-                    if let Some(err) = self.data.product.create(product).err() {
-                        match err {
-                            DataError::UniqueConstraintViolation(unique_field)
-                                if unique_field == "products.name" =>
-                            {
-                                self.create_product_form.name.error =
-                                    Some(InputFormFieldError::Custom(
-                                        "Product with this name already exists".to_string(),
-                                    ))
-                            }
-                            _ => {
-                                eprintln!("Error: {:?}", err);
-                            }
-                        }
-                    } else {
-                        self.create_product_form.reset();
-                        self.refresh_products();
-                        self.screen = Screen::ProductList
-                    }
-                };
-            }
-            Message::SubmitUpdateProductForm => {
-                let (product_id, form) = &mut self.update_product_form.as_mut().unwrap();
 
+            Message::PrevDay => {
+                self.day = self.day.checked_sub_days(Days::new(1)).unwrap();
+                self.refresh_meals();
+            }
+            Message::NextDay => {
+                self.day = self.day.checked_add_days(Days::new(1)).unwrap();
+                self.refresh_meals();
+            }
+            Message::CreateProduct(m) => self.handle_create_product_message(m),
+            Message::UpdateProduct(m) => self.handle_update_product_message(m),
+            Message::ProductList(m) => self.handle_product_list_message(m),
+            Message::MealList(m) => self.handle_meal_list_message(m),
+        }
+    }
+
+    fn handle_create_product_message(&mut self, message: CreateProductMessage) {
+        match message {
+            CreateProductMessage::UpdateFormName(name) => {
+                let form = self.create_product_form.as_mut().unwrap();
+                form.name.raw_input = name;
+            }
+            CreateProductMessage::UpdateFormCompany(company) => {
+                let form = self.create_product_form.as_mut().unwrap();
+                form.company.raw_input = company;
+            }
+            CreateProductMessage::UpdateFormCalories(raw_calories) => {
+                let form = self.create_product_form.as_mut().unwrap();
+                form.calories.raw_input = raw_calories;
+            }
+            CreateProductMessage::UpdateFormFats(raw_fats) => {
+                let form = self.create_product_form.as_mut().unwrap();
+                form.fats.raw_input = raw_fats;
+            }
+            CreateProductMessage::UpdateFormProteins(raw_proteins) => {
+                let form = self.create_product_form.as_mut().unwrap();
+                form.proteins.raw_input = raw_proteins;
+            }
+            CreateProductMessage::UpdateFormCarbohydrates(raw_carbohydrates) => {
+                let form = self.create_product_form.as_mut().unwrap();
+                form.carbohydrates.raw_input = raw_carbohydrates;
+            }
+            CreateProductMessage::SubmitForm => {
+                let form = self.create_product_form.as_mut().unwrap();
                 if let Ok(product) = form.parse() {
-                    if let Some(err) = self.data.product.update(*product_id, product).err() {
+                    if let Some(err) = self.data.product.create(product).err() {
                         match err {
                             DataError::UniqueConstraintViolation(unique_field)
                                 if unique_field == "products.name" =>
@@ -226,17 +164,79 @@ impl App {
                             }
                         }
                     } else {
-                        form.reset();
+                        self.create_product_form = None;
                         self.refresh_products();
                         self.screen = Screen::ProductList
                     }
                 };
             }
-            Message::DeleteProduct(product_id) => {
+        }
+    }
+
+    fn handle_update_product_message(&mut self, message: UpdateProductMessage) {
+        match message {
+            UpdateProductMessage::UpdateFormName(name) => {
+                let form = self.update_product_form.as_mut().unwrap();
+                form.name.raw_input = name;
+            }
+            UpdateProductMessage::UpdateFormCompany(company) => {
+                let form = self.update_product_form.as_mut().unwrap();
+                form.company.raw_input = company;
+            }
+            UpdateProductMessage::UpdateFormCalories(raw_calories) => {
+                let form = self.update_product_form.as_mut().unwrap();
+                form.calories.raw_input = raw_calories;
+            }
+            UpdateProductMessage::UpdateFormFats(raw_fats) => {
+                let form = self.update_product_form.as_mut().unwrap();
+                form.fats.raw_input = raw_fats;
+            }
+            UpdateProductMessage::UpdateFormProteins(raw_proteins) => {
+                let form = self.update_product_form.as_mut().unwrap();
+                form.proteins.raw_input = raw_proteins;
+            }
+            UpdateProductMessage::UpdateFormCarbohydrates(raw_carbohydrates) => {
+                let form = self.update_product_form.as_mut().unwrap();
+                form.carbohydrates.raw_input = raw_carbohydrates;
+            }
+            UpdateProductMessage::SubmitForm => {
+                let form = self.update_product_form.as_mut().unwrap();
+                if let Ok(product) = form.parse() {
+                    if let Some(err) = self.data.product.update(form.product_id, product).err() {
+                        match err {
+                            DataError::UniqueConstraintViolation(unique_field)
+                                if unique_field == "products.name" =>
+                            {
+                                form.name.error = Some(InputFormFieldError::Custom(
+                                    "Product with this name already exists".to_string(),
+                                ))
+                            }
+                            _ => {
+                                eprintln!("Error: {:?}", err);
+                            }
+                        }
+                    } else {
+                        self.update_product_form = None;
+                        self.refresh_products();
+                        self.screen = Screen::ProductList
+                    }
+                };
+            }
+        }
+    }
+
+    fn handle_product_list_message(&mut self, message: ProductListMessage) {
+        match message {
+            ProductListMessage::DeleteProduct(product_id) => {
                 self.data.product.delete(product_id).unwrap();
                 self.refresh_products();
             }
-            Message::CreateMealProductFormMeal(meal_id) => match meal_id {
+        }
+    }
+
+    fn handle_meal_list_message(&mut self, message: MealListMessage) {
+        match message {
+            MealListMessage::CreateMealProductFormMeal(meal_id) => match meal_id {
                 Some(id) => {
                     let meal = self.data.meal.read(id).unwrap();
                     self.add_meal_product_form = Some(MealProductForm::new(&self.products, &meal));
@@ -245,15 +245,15 @@ impl App {
                     self.add_meal_product_form = None;
                 }
             },
-            Message::CreateMealProductFormWeight(raw_weight) => {
-                let form = &mut self.add_meal_product_form.as_mut().unwrap();
+            MealListMessage::CreateMealProductFormWeight(raw_weight) => {
+                let form = self.add_meal_product_form.as_mut().unwrap();
                 form.weight.raw_input = raw_weight;
             }
-            Message::CreateMealProductFormProduct(product_id) => {
-                let form = &mut self.add_meal_product_form.as_mut().unwrap();
+            MealListMessage::CreateMealProductFormProduct(product_id) => {
+                let form = self.add_meal_product_form.as_mut().unwrap();
                 form.product_id = Some(product_id);
             }
-            Message::SubmitAddMealProductForm => {
+            MealListMessage::SubmitAddMealProductForm => {
                 if let Ok(add_meal_product) = self.add_meal_product_form.as_mut().unwrap().parse() {
                     self.data.meal.add_product(add_meal_product).unwrap();
 
@@ -261,20 +261,23 @@ impl App {
                     self.add_meal_product_form = None;
                 }
             }
-            Message::UpdateMealProductFormMealProduct(meal_product_id) => match meal_product_id {
-                Some(id) => {
-                    let meal_product = self.data.meal.read_product(id).unwrap();
-                    self.update_meal_product_form = Some(UpdateMealProductForm::new(&meal_product));
+            MealListMessage::UpdateMealProductFormMealProduct(meal_product_id) => {
+                match meal_product_id {
+                    Some(id) => {
+                        let meal_product = self.data.meal.read_product(id).unwrap();
+                        self.update_meal_product_form =
+                            Some(UpdateMealProductForm::new(&meal_product));
+                    }
+                    None => {
+                        self.update_meal_product_form = None;
+                    }
                 }
-                None => {
-                    self.update_meal_product_form = None;
-                }
-            },
-            Message::UpdateMealProductFormWeight(raw_weight) => {
-                let form = &mut self.update_meal_product_form.as_mut().unwrap();
+            }
+            MealListMessage::UpdateMealProductFormWeight(raw_weight) => {
+                let form = self.update_meal_product_form.as_mut().unwrap();
                 form.weight.raw_input = raw_weight;
             }
-            Message::SubmitUpdateMealProductForm => {
+            MealListMessage::SubmitUpdateMealProductForm => {
                 if let Ok(update_meal_product_weight) =
                     self.update_meal_product_form.as_mut().unwrap().parse()
                 {
@@ -287,19 +290,11 @@ impl App {
                     self.update_meal_product_form = None;
                 }
             }
-            Message::DeleteMealProduct(meal_product_id) => {
+            MealListMessage::DeleteMealProduct(meal_product_id) => {
                 self.data.meal.delete_product(meal_product_id).unwrap();
                 self.refresh_meals();
             }
-            Message::PrevDay => {
-                self.day = self.day.checked_sub_days(Days::new(1)).unwrap();
-                self.refresh_meals();
-            }
-            Message::NextDay => {
-                self.day = self.day.checked_add_days(Days::new(1)).unwrap();
-                self.refresh_meals();
-            }
-            Message::CopyMealProductsMeal(meal_id) => match meal_id {
+            MealListMessage::CopyMealProductsMeal(meal_id) => match meal_id {
                 Some(id) => {
                     let meal = self.data.meal.read(id).unwrap();
                     let prev_day = meal.day.checked_sub_days(Days::new(1)).unwrap();
@@ -312,8 +307,8 @@ impl App {
                 }
                 None => self.copy_meal_products_form = None,
             },
-            Message::CopyMealProductsFromDay(new_day) => {
-                let form = &mut self.copy_meal_products_form.as_mut().unwrap();
+            MealListMessage::CopyMealProductsFromDay(new_day) => {
+                let form = self.copy_meal_products_form.as_mut().unwrap();
 
                 let new_products = self
                     .data
@@ -325,7 +320,7 @@ impl App {
                 form.from_day = new_day;
                 form.meal_products = new_products;
             }
-            Message::SubmitCopyMealProductsForm => {
+            MealListMessage::SubmitCopyMealProductsForm => {
                 if let Ok(add_meal_products) =
                     self.copy_meal_products_form.as_mut().unwrap().parse()
                 {
@@ -339,103 +334,6 @@ impl App {
         }
     }
 
-    fn home_screen(&self) -> Element<Message> {
-        let content = column![Text::new("Home").size(40)].spacing(10);
-
-        row![self.sidebar(), content]
-            .height(Length::Fill)
-            .padding(20)
-            .spacing(20)
-            .into()
-    }
-
-    fn create_product_screen(&self) -> Element<Message> {
-        let content = column![
-            Text::new("Create product").size(40),
-            render_product_form(&self.create_product_form),
-            Button::new("Create").on_press(Message::SubmitCreateProductForm)
-        ]
-        .spacing(10);
-
-        row![self.sidebar(), content]
-            .height(Length::Fill)
-            .padding(20)
-            .spacing(20)
-            .into()
-    }
-
-    fn update_product_screen(&self) -> Element<Message> {
-        let (_id, form) = self.update_product_form.as_ref().unwrap();
-
-        let content = column![
-            Text::new("Update product").size(40),
-            render_product_form(form),
-            Button::new("Update").on_press(Message::SubmitUpdateProductForm)
-        ]
-        .spacing(10);
-
-        row![self.sidebar(), content]
-            .height(Length::Fill)
-            .padding(20)
-            .spacing(20)
-            .into()
-    }
-
-    fn product_list_screen(&self) -> Element<Message> {
-        let content = column![
-            Text::new("Product list").size(40),
-            render_product_list(&self.products)
-        ]
-        .spacing(10);
-
-        row![self.sidebar(), content]
-            .height(Length::Fill)
-            .padding(20)
-            .spacing(20)
-            .into()
-    }
-
-    fn meals_screen(&self) -> Element<Message> {
-        let content = column![
-            Text::new("Meals").size(40),
-            render_meal_list(&self.meals),
-            vertical_space(),
-            meal_stats(&self.meal_day_stats)
-        ]
-        .spacing(10);
-
-        let content_with_sidebar = row![self.sidebar(), content]
-            .height(Length::Fill)
-            .padding(20)
-            .spacing(20);
-
-        if let Some(add_form) = &self.add_meal_product_form {
-            return self.modal(
-                content_with_sidebar.into(),
-                render_add_product_to_meal_form(add_form),
-                Message::CreateMealProductFormMeal(None),
-            );
-        }
-
-        if let Some(update_form) = &self.update_meal_product_form {
-            return self.modal(
-                content_with_sidebar.into(),
-                render_update_meal_product_form(update_form),
-                Message::UpdateMealProductFormMealProduct(None),
-            );
-        }
-
-        if let Some(copy_form) = &self.copy_meal_products_form {
-            return self.modal(
-                content_with_sidebar.into(),
-                render_copy_meal_products_form(copy_form),
-                Message::CopyMealProductsMeal(None),
-            );
-        }
-
-        content_with_sidebar.into()
-    }
-
     fn refresh_products(&mut self) {
         let products = self.data.product.list().unwrap();
         self.products = products.clone();
@@ -444,80 +342,5 @@ impl App {
     fn refresh_meals(&mut self) {
         self.meals = self.data.meal.list_or_create_default(self.day).unwrap();
         self.meal_day_stats = self.data.meal.day_stats(self.day).unwrap();
-    }
-
-    fn modal<'a>(
-        &self,
-        base: Element<'a, Message>,
-        modal_content: Element<'a, Message>,
-        on_blur: Message,
-    ) -> Element<'a, Message> {
-        stack![
-            base,
-            opaque(
-                mouse_area(center(opaque(modal_content)).style(|_theme| {
-                    container::Style {
-                        background: Some(
-                            Color {
-                                a: 0.8,
-                                ..Color::BLACK
-                            }
-                            .into(),
-                        ),
-
-                        ..container::Style::default()
-                    }
-                }))
-                .on_press(on_blur)
-            )
-        ]
-        .into()
-    }
-
-    fn sidebar(&self) -> Element<Message> {
-        let buttons = vec![
-            ("Home", Message::ChangeScreen(Screen::Home)),
-            ("Meals", Message::ChangeScreen(Screen::MealList)),
-            (
-                "Create Product",
-                Message::ChangeScreen(Screen::CreateProduct),
-            ),
-            ("Product List", Message::ChangeScreen(Screen::ProductList)),
-        ];
-
-        let navigation = buttons
-            .into_iter()
-            .map(|(content, message)| {
-                Button::new(content)
-                    .on_press(message)
-                    .width(Length::Fill)
-                    .into()
-            })
-            .collect::<Column<Message>>()
-            .width(200)
-            .spacing(10);
-
-        let today = Local::now().date_naive();
-        let tomorrow = today.checked_add_days(Days::new(1)).unwrap();
-        let yesterday = today.checked_sub_days(Days::new(1)).unwrap();
-
-        let formatted_day = match self.day {
-            d if d == today => "Today".to_string(),
-            d if d == tomorrow => "Tomorrow".to_string(),
-            d if d == yesterday => "Yesterday".to_string(),
-            _ => self.day.format("%Y-%m-%d").to_string(),
-        };
-        let day_row = row![
-            Button::new("<").on_press(Message::PrevDay),
-            horizontal_space(),
-            Text::new(formatted_day).size(20),
-            horizontal_space(),
-            Button::new(">").on_press(Message::NextDay),
-        ]
-        .align_y(Center)
-        .width(200)
-        .spacing(10);
-
-        column![navigation, vertical_space(), day_row].into()
     }
 }

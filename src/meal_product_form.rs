@@ -11,6 +11,7 @@ use crate::{
     app::Message,
     data::{AddMealProduct, Meal, MealProduct, Product, UpdateMealProductWeight},
     form_field::{render_input_form_field, InputFormField, InputFormFieldError},
+    meal_list_screen::MealListMessage,
 };
 
 #[derive(Debug)]
@@ -79,7 +80,7 @@ pub fn render_add_product_to_meal_form(form: &MealProductForm) -> Element<Messag
         &form.combo_box_state,
         "Search product...",
         selected_product,
-        |p| Message::CreateMealProductFormProduct(p.id),
+        |p| MealListMessage::CreateMealProductFormProduct(p.id).into(),
     )
     .width(Length::Fill);
 
@@ -87,13 +88,15 @@ pub fn render_add_product_to_meal_form(form: &MealProductForm) -> Element<Messag
         column![
             Text::new(format!("Add product to {}", form.meal.name)).size(30),
             combo_box,
-            render_input_form_field(&form.weight, Message::CreateMealProductFormWeight),
+            render_input_form_field(&form.weight, |w| {
+                MealListMessage::CreateMealProductFormWeight(w).into()
+            }),
             Button::new("Add Product")
                 .width(Length::Fill)
-                .on_press(Message::SubmitAddMealProductForm),
+                .on_press(MealListMessage::SubmitAddMealProductForm.into()),
             Button::new("Cancel")
                 .width(Length::Fill)
-                .on_press(Message::CreateMealProductFormMeal(None))
+                .on_press(MealListMessage::CreateMealProductFormMeal(None).into())
         ]
         .spacing(10),
     )
@@ -145,13 +148,15 @@ pub fn render_update_meal_product_form(form: &UpdateMealProductForm) -> Element<
     container(
         column![
             Text::new(format!("Edit weight of {}", form.meal_product.name)).size(30),
-            render_input_form_field(&form.weight, Message::UpdateMealProductFormWeight),
+            render_input_form_field(&form.weight, |w| {
+                MealListMessage::UpdateMealProductFormWeight(w).into()
+            }),
             Button::new("Update Weight")
                 .width(Length::Fill)
-                .on_press(Message::SubmitUpdateMealProductForm),
+                .on_press(MealListMessage::SubmitUpdateMealProductForm.into()),
             Button::new("Cancel")
                 .width(Length::Fill)
-                .on_press(Message::UpdateMealProductFormMealProduct(None))
+                .on_press(MealListMessage::UpdateMealProductFormMealProduct(None).into())
         ]
         .spacing(10),
     )
@@ -210,15 +215,21 @@ pub fn render_copy_meal_products_form(form: &CopyMealProductsForm) -> Element<Me
     };
 
     let day_row = row![
-        Button::new("<").on_press(Message::CopyMealProductsFromDay(
-            form.from_day.checked_sub_days(Days::new(1)).unwrap()
-        )),
+        Button::new("<").on_press(
+            MealListMessage::CopyMealProductsFromDay(
+                form.from_day.checked_sub_days(Days::new(1)).unwrap()
+            )
+            .into()
+        ),
         horizontal_space(),
         Text::new(formatted_from_day.clone()).size(20),
         horizontal_space(),
-        Button::new(">").on_press(Message::CopyMealProductsFromDay(
-            form.from_day.checked_add_days(Days::new(1)).unwrap()
-        )),
+        Button::new(">").on_press(
+            MealListMessage::CopyMealProductsFromDay(
+                form.from_day.checked_add_days(Days::new(1)).unwrap()
+            )
+            .into()
+        ),
     ]
     .align_y(Center)
     .width(Length::Fill)
@@ -236,10 +247,10 @@ pub fn render_copy_meal_products_form(form: &CopyMealProductsForm) -> Element<Me
             day_row,
             Button::new("Copy Meal")
                 .width(Length::Fill)
-                .on_press(Message::SubmitCopyMealProductsForm),
+                .on_press(MealListMessage::SubmitCopyMealProductsForm.into()),
             Button::new("Cancel")
                 .width(Length::Fill)
-                .on_press(Message::CopyMealProductsMeal(None))
+                .on_press(MealListMessage::CopyMealProductsMeal(None).into())
         ]
         .spacing(10),
     )

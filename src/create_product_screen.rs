@@ -1,13 +1,51 @@
-use iced::{widget::column, Element};
-
-use crate::{
-    app::Message,
-    data::CreateUpdateProduct,
-    form_field::{render_input_form_field, InputFormField, InputFormFieldError},
+use iced::{
+    widget::{column, row, Button, Text},
+    Element, Length,
 };
 
+use crate::{
+    app::{App, Message},
+    data::CreateUpdateProduct,
+    form_field::{render_input_form_field, InputFormField, InputFormFieldError},
+    sidebar::render_sidebar,
+};
+
+#[derive(Debug, Clone)]
+pub enum CreateProductMessage {
+    UpdateFormName(String),
+    UpdateFormCompany(String),
+    UpdateFormCalories(String),
+    UpdateFormFats(String),
+    UpdateFormProteins(String),
+    UpdateFormCarbohydrates(String),
+    SubmitForm,
+}
+
+impl From<CreateProductMessage> for Message {
+    fn from(value: CreateProductMessage) -> Self {
+        Message::CreateProduct(value)
+    }
+}
+
+pub fn render_create_product_screen(app: &App) -> Element<Message> {
+    let form = app.create_product_form.as_ref().unwrap();
+
+    let content = column![
+        Text::new("Create product").size(40),
+        form.render(),
+        Button::new("Create").on_press(CreateProductMessage::SubmitForm.into())
+    ]
+    .spacing(10);
+
+    row![render_sidebar(app), content]
+        .height(Length::Fill)
+        .padding(20)
+        .spacing(20)
+        .into()
+}
+
 #[derive(Debug)]
-pub struct CreateUpdateProductForm {
+pub struct CreateProductForm {
     pub name: InputFormField<String>,
     pub company: InputFormField<Option<String>>,
     pub calories: InputFormField<f64>,
@@ -16,9 +54,9 @@ pub struct CreateUpdateProductForm {
     pub carbohydrates: InputFormField<f64>,
 }
 
-impl CreateUpdateProductForm {
+impl CreateProductForm {
     pub fn new() -> Self {
-        CreateUpdateProductForm {
+        CreateProductForm {
             name: InputFormField::new("Name*", "Chicken"),
             company: InputFormField::new("Company", "Chicken Inc."),
             calories: InputFormField::new("Calories* (kcal)", "100.0"),
@@ -26,32 +64,6 @@ impl CreateUpdateProductForm {
             proteins: InputFormField::new("Proteins* (g)", "20.0"),
             carbohydrates: InputFormField::new("Carbohydrates* (g)", "1.0"),
         }
-    }
-
-    pub fn new_filled(
-        name: &str,
-        company: &str,
-        calories: &str,
-        fats: &str,
-        proteins: &str,
-        carbohydrates: &str,
-    ) -> Self {
-        CreateUpdateProductForm {
-            name: InputFormField::new_with_raw_value("Name*", "Chicken", name),
-            company: InputFormField::new_with_raw_value("Company", "Chicken Inc.", company),
-            calories: InputFormField::new_with_raw_value("Calories* (kcal)", "100.0", calories),
-            fats: InputFormField::new_with_raw_value("Fats* (g)", "2.0", fats),
-            proteins: InputFormField::new_with_raw_value("Proteins* (g)", "20.0", proteins),
-            carbohydrates: InputFormField::new_with_raw_value(
-                "Carbohydrates* (g)",
-                "1.0",
-                carbohydrates,
-            ),
-        }
-    }
-
-    pub fn reset(&mut self) {
-        *self = CreateUpdateProductForm::new();
     }
 
     pub fn parse(&mut self) -> Result<CreateUpdateProduct, String> {
@@ -130,20 +142,29 @@ impl CreateUpdateProductForm {
             carbohydrates: self.carbohydrates.value.ok_or("validation failed")?,
         })
     }
-}
 
-pub fn render_product_form(form: &CreateUpdateProductForm) -> Element<Message> {
-    column![
-        render_input_form_field(&form.name, Message::UpdateCreateProductFormName),
-        render_input_form_field(&form.company, Message::UpdateCreateProductFormCompany),
-        render_input_form_field(&form.calories, Message::UpdateCreateProductFormCalories),
-        render_input_form_field(&form.fats, Message::UpdateCreateProductFormFats),
-        render_input_form_field(&form.proteins, Message::UpdateCreateProductFormProteins),
-        render_input_form_field(
-            &form.carbohydrates,
-            Message::UpdateCreateProductFormCarbohydrates
-        ),
-    ]
-    .spacing(10)
-    .into()
+    fn render(&self) -> Element<Message> {
+        column![
+            render_input_form_field(&self.name, |n| {
+                CreateProductMessage::UpdateFormName(n).into()
+            }),
+            render_input_form_field(&self.company, |c| CreateProductMessage::UpdateFormCompany(
+                c
+            )
+            .into()),
+            render_input_form_field(&self.calories, |c| {
+                CreateProductMessage::UpdateFormCalories(c).into()
+            }),
+            render_input_form_field(&self.fats, |f| CreateProductMessage::UpdateFormFats(f)
+                .into()),
+            render_input_form_field(&self.proteins, |p| {
+                CreateProductMessage::UpdateFormProteins(p).into()
+            }),
+            render_input_form_field(&self.carbohydrates, |c| {
+                CreateProductMessage::UpdateFormCarbohydrates(c).into()
+            }),
+        ]
+        .spacing(10)
+        .into()
+    }
 }

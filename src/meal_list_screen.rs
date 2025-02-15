@@ -1,31 +1,100 @@
+use chrono::NaiveDate;
 use iced::{
-    widget::{column, progress_bar, row, Button, Container, Scrollable, Text},
+    widget::{column, progress_bar, row, vertical_space, Button, Container, Scrollable, Text},
     Alignment::Center,
     Element, Length,
 };
 
 use crate::{
-    app::Message,
+    app::{App, Message},
     data::{Meal, MealDayStats, MealProduct},
+    meal_product_form::{
+        render_add_product_to_meal_form, render_copy_meal_products_form,
+        render_update_meal_product_form,
+    },
+    modal::render_modal,
+    sidebar::render_sidebar,
     style::TableRowStyle,
 };
 
-pub fn render_meal_list(meals: &[Meal]) -> Element<Message> {
+#[derive(Debug, Clone)]
+pub enum MealListMessage {
+    CreateMealProductFormMeal(Option<usize>),
+    CreateMealProductFormWeight(String),
+    CreateMealProductFormProduct(usize),
+    SubmitAddMealProductForm,
+
+    UpdateMealProductFormMealProduct(Option<usize>),
+    UpdateMealProductFormWeight(String),
+    SubmitUpdateMealProductForm,
+
+    DeleteMealProduct(usize),
+
+    CopyMealProductsMeal(Option<usize>),
+    CopyMealProductsFromDay(NaiveDate),
+    SubmitCopyMealProductsForm,
+}
+
+impl From<MealListMessage> for Message {
+    fn from(value: MealListMessage) -> Self {
+        Message::MealList(value)
+    }
+}
+
+pub fn render_meal_list_screen(app: &App) -> Element<Message> {
     let mut tables = column![].spacing(20);
-    for meal in meals.iter() {
+    for meal in app.meals.iter() {
         tables = tables.push(render_meal(meal))
     }
 
-    Scrollable::new(tables).into()
+    let content = column![
+        Text::new("Meals").size(40),
+        Scrollable::new(tables),
+        vertical_space(),
+        meal_stats(&app.meal_day_stats)
+    ]
+    .spacing(10);
+
+    let content_with_sidebar = row![render_sidebar(app), content]
+        .height(Length::Fill)
+        .padding(20)
+        .spacing(20);
+
+    if let Some(add_form) = &app.add_meal_product_form {
+        return render_modal(
+            content_with_sidebar.into(),
+            render_add_product_to_meal_form(add_form),
+            MealListMessage::CreateMealProductFormMeal(None).into(),
+        );
+    }
+
+    if let Some(update_form) = &app.update_meal_product_form {
+        return render_modal(
+            content_with_sidebar.into(),
+            render_update_meal_product_form(update_form),
+            MealListMessage::UpdateMealProductFormMealProduct(None).into(),
+        );
+    }
+
+    if let Some(copy_form) = &app.copy_meal_products_form {
+        return render_modal(
+            content_with_sidebar.into(),
+            render_copy_meal_products_form(copy_form),
+            MealListMessage::CopyMealProductsMeal(None).into(),
+        );
+    }
+
+    content_with_sidebar.into()
 }
 
 fn render_meal(meal: &Meal) -> Element<Message> {
     let mut table = column![
         row![
             Text::new(&meal.name).size(20),
-            Button::new("Add Product").on_press(Message::CreateMealProductFormMeal(Some(meal.id))),
+            Button::new("Add Product")
+                .on_press(MealListMessage::CreateMealProductFormMeal(Some(meal.id)).into()),
             Button::new("Copy From Different Day")
-                .on_press(Message::CopyMealProductsMeal(Some(meal.id)))
+                .on_press(MealListMessage::CopyMealProductsMeal(Some(meal.id)).into())
         ]
         .spacing(10),
         list_header_row()
@@ -63,8 +132,9 @@ fn list_row(mp: &MealProduct, even: bool) -> Element<Message> {
         Text::new(format!("{:.1}", mp.proteins)).width(Length::Fill),
         Text::new(format!("{:.1}", mp.carbohydrates)).width(Length::Fill),
         row![
-            Button::new("Update").on_press(Message::UpdateMealProductFormMealProduct(Some(mp.id))),
-            Button::new("Delete").on_press(Message::DeleteMealProduct(mp.id))
+            Button::new("Update")
+                .on_press(MealListMessage::UpdateMealProductFormMealProduct(Some(mp.id)).into()),
+            Button::new("Delete").on_press(MealListMessage::DeleteMealProduct(mp.id).into())
         ]
         .spacing(10)
         .width(Length::Fill)

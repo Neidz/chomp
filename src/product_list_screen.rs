@@ -4,18 +4,36 @@ use iced::{
 };
 
 use crate::{
-    app::{Message, Screen},
+    app::{App, Message, Screen},
     data::Product,
+    sidebar::render_sidebar,
     style::TableRowStyle,
 };
 
-pub fn render_product_list(products: &[Product]) -> Element<Message> {
+#[derive(Debug, Clone)]
+pub enum ProductListMessage {
+    DeleteProduct(usize),
+}
+
+impl From<ProductListMessage> for Message {
+    fn from(value: ProductListMessage) -> Self {
+        Message::ProductList(value)
+    }
+}
+
+pub fn render_product_list_screen(app: &App) -> Element<Message> {
     let mut table = column![list_header_row()];
-    for (i, product) in products.iter().enumerate() {
+    for (i, product) in app.products.iter().enumerate() {
         table = table.push(list_row(product, i % 2 == 0))
     }
 
-    Scrollable::new(table).into()
+    let content = column![Text::new("Product list").size(40), Scrollable::new(table)].spacing(10);
+
+    row![render_sidebar(app), content]
+        .height(Length::Fill)
+        .padding(20)
+        .spacing(20)
+        .into()
 }
 
 fn list_header_row() -> Element<'static, Message> {
@@ -46,7 +64,7 @@ fn list_row(p: &Product, even: bool) -> Element<Message> {
         Text::new(format!("{:.1}", p.carbohydrates)).width(Length::Fill),
         row![
             Button::new("Update").on_press(Message::ChangeScreen(Screen::UpdateProduct(p.id))),
-            Button::new("Delete").on_press(Message::DeleteProduct(p.id))
+            Button::new("Delete").on_press(ProductListMessage::DeleteProduct(p.id).into())
         ]
         .spacing(10)
         .width(Length::Fill)
