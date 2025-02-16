@@ -188,7 +188,7 @@ impl CopyMealProductsForm {
             .iter()
             .map(|mp| AddMealProduct {
                 meal_id: self.target_meal.id,
-                product_id: mp.id,
+                product_id: mp.product_id,
                 weight: mp.weight,
             })
             .collect())

@@ -11,6 +11,7 @@ const DEFAULT_MEALS: [&str; 4] = ["Breakfast", "Snack", "Lunch", "Dinner"];
 #[derive(Debug, Clone, PartialEq)]
 pub struct MealProduct {
     pub id: usize,
+    pub product_id: usize,
     pub weight: f64,
     pub name: String,
     pub company: Option<String>,
@@ -170,6 +171,7 @@ impl MealData {
                 meals.position,
     			meal_products.id,
     			meal_products.weight,
+                products.id,
     			products.name,
     			products.company,
     			products.calories * meal_products.weight / 100,
@@ -197,13 +199,14 @@ impl MealData {
                 let meal_product = if has_meal_product {
                     Some(MealProduct {
                         id: row.get(4)?,
+                        product_id: row.get(6)?,
                         weight: row.get(5)?,
-                        name: row.get(6)?,
-                        company: row.get(7)?,
-                        calories: row.get(8)?,
-                        fats: row.get(9)?,
-                        proteins: row.get(10)?,
-                        carbohydrates: row.get(11)?,
+                        name: row.get(7)?,
+                        company: row.get(8)?,
+                        calories: row.get(9)?,
+                        fats: row.get(10)?,
+                        proteins: row.get(11)?,
+                        carbohydrates: row.get(12)?,
                     })
                 } else {
                     None
@@ -256,6 +259,7 @@ impl MealData {
             SELECT
     			meal_products.id,
     			meal_products.weight,
+                products.id,
     			products.name,
     			products.company,
     			products.calories * meal_products.weight / 100,
@@ -274,12 +278,13 @@ impl MealData {
             Ok(MealProduct {
                 id: row.get(0)?,
                 weight: row.get(1)?,
-                name: row.get(2)?,
-                company: row.get(3)?,
-                calories: row.get(4)?,
-                fats: row.get(5)?,
-                proteins: row.get(6)?,
-                carbohydrates: row.get(7)?,
+                product_id: row.get(2)?,
+                name: row.get(3)?,
+                company: row.get(4)?,
+                calories: row.get(5)?,
+                fats: row.get(6)?,
+                proteins: row.get(7)?,
+                carbohydrates: row.get(8)?,
             })
         })
         .map_err(DataError::from)
@@ -294,6 +299,7 @@ impl MealData {
                 meals.position,
     			meal_products.id,
     			meal_products.weight,
+                products.id,
     			products.name,
     			products.company,
     			products.calories * meal_products.weight / 100,
@@ -322,12 +328,13 @@ impl MealData {
                     Some(MealProduct {
                         id: row.get(4)?,
                         weight: row.get(5)?,
-                        name: row.get(6)?,
-                        company: row.get(7)?,
-                        calories: row.get(8)?,
-                        fats: row.get(9)?,
-                        proteins: row.get(10)?,
-                        carbohydrates: row.get(11)?,
+                        product_id: row.get(6)?,
+                        name: row.get(7)?,
+                        company: row.get(8)?,
+                        calories: row.get(9)?,
+                        fats: row.get(10)?,
+                        proteins: row.get(11)?,
+                        carbohydrates: row.get(12)?,
                     })
                 } else {
                     None
