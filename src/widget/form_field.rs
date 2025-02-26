@@ -9,7 +9,7 @@ use crate::app::Message;
 
 type Length = usize;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum InputFormFieldError {
     MissingRequiredValue,
     InvalidNumber,
@@ -40,7 +40,7 @@ impl fmt::Display for InputFormFieldError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct InputFormField<T> {
     pub name: String,
     pub placeholder: String,
@@ -83,24 +83,21 @@ impl<T> InputFormField<T> {
             }
         }
     }
-}
 
-pub fn render_input_form_field<T, F>(
-    field: &InputFormField<T>,
-    handle_message: F,
-) -> Element<Message>
-where
-    F: Fn(String) -> Message + 'static,
-{
-    let mut column = column![
-        Text::new(&field.name),
-        TextInput::new(&field.placeholder, &field.raw_input).on_input(handle_message)
-    ]
-    .spacing(2);
+    pub fn view<F>(&self, handle_message: F) -> Element<Message>
+    where
+        F: Fn(String) -> Message + 'static,
+    {
+        let mut column = column![
+            Text::new(&self.name),
+            TextInput::new(&self.placeholder, &self.raw_input).on_input(handle_message)
+        ]
+        .spacing(2);
 
-    if let Some(err) = &field.error {
-        column = column.push(Text::new(err.to_string()).color(Color::from_rgb(1.0, 0.0, 0.0)));
+        if let Some(err) = &self.error {
+            column = column.push(Text::new(err.to_string()).color(Color::from_rgb(1.0, 0.0, 0.0)));
+        }
+
+        column.into()
     }
-
-    column.into()
 }

@@ -5,15 +5,15 @@ use iced::{
 
 use crate::app::Message;
 
-pub fn render_modal<'a>(
-    base: Element<'a, Message>,
-    modal_content: Element<'a, Message>,
+pub fn modal<'a>(
+    view: Element<'a, Message>,
+    modal_view: Element<'a, Message>,
     on_blur: Message,
 ) -> Element<'a, Message> {
     stack![
-        base,
+        view,
         opaque(
-            mouse_area(center(opaque(modal_content)).style(|_theme| {
+            mouse_area(center(opaque(modal_view)).style(|_theme| {
                 container::Style {
                     background: Some(
                         Color {

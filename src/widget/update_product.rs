@@ -4,21 +4,25 @@ use iced::{
 };
 
 use crate::{
-    app::{App, Message},
-    data::{CreateUpdateProduct, Product},
-    form_field::{render_input_form_field, InputFormField, InputFormFieldError},
-    sidebar::render_sidebar,
+    app::{Context, Message, NextWidget},
+    data::{CreateUpdateProduct, DataError, Product},
+};
+
+use super::{
+    form_field::{InputFormField, InputFormFieldError},
+    sidebar::sidebar,
+    Widget,
 };
 
 #[derive(Debug, Clone)]
 pub enum UpdateProductMessage {
-    UpdateFormName(String),
-    UpdateFormCompany(String),
-    UpdateFormCalories(String),
-    UpdateFormFats(String),
-    UpdateFormProteins(String),
-    UpdateFormCarbohydrates(String),
-    SubmitForm,
+    UpdateName(String),
+    UpdateCompany(String),
+    UpdateCalories(String),
+    UpdateFats(String),
+    UpdateProteins(String),
+    UpdateCarbohydrates(String),
+    Submit,
 }
 
 impl From<UpdateProductMessage> for Message {
@@ -27,37 +31,20 @@ impl From<UpdateProductMessage> for Message {
     }
 }
 
-pub fn render_update_product_screen(app: &App) -> Element<Message> {
-    let form = app.update_product_form.as_ref().unwrap();
-
-    let content = column![
-        Text::new("Update product").size(40),
-        form.render(),
-        Button::new("Create").on_press(UpdateProductMessage::SubmitForm.into())
-    ]
-    .spacing(10);
-
-    row![render_sidebar(app), content]
-        .height(Length::Fill)
-        .padding(20)
-        .spacing(20)
-        .into()
-}
-
 #[derive(Debug)]
-pub struct UpdateProductForm {
-    pub product_id: usize,
-    pub name: InputFormField<String>,
-    pub company: InputFormField<Option<String>>,
-    pub calories: InputFormField<f64>,
-    pub fats: InputFormField<f64>,
-    pub proteins: InputFormField<f64>,
-    pub carbohydrates: InputFormField<f64>,
+pub struct UpdateProduct {
+    product_id: usize,
+    name: InputFormField<String>,
+    company: InputFormField<Option<String>>,
+    calories: InputFormField<f64>,
+    fats: InputFormField<f64>,
+    proteins: InputFormField<f64>,
+    carbohydrates: InputFormField<f64>,
 }
 
-impl UpdateProductForm {
-    pub fn new(p: &Product) -> Self {
-        UpdateProductForm {
+impl UpdateProduct {
+    pub fn new(p: Product) -> Self {
+        UpdateProduct {
             product_id: p.id,
             name: InputFormField::new_with_raw_value("Name*", "Chicken", &p.name),
             company: InputFormField::new_with_raw_value(
@@ -160,29 +147,82 @@ impl UpdateProductForm {
             carbohydrates: self.carbohydrates.value.ok_or("validation failed")?,
         })
     }
+}
 
-    pub fn render(&self) -> Element<Message> {
-        column![
-            render_input_form_field(&self.name, |n| {
-                UpdateProductMessage::UpdateFormName(n).into()
-            }),
-            render_input_form_field(&self.company, |c| UpdateProductMessage::UpdateFormCompany(
-                c
-            )
-            .into()),
-            render_input_form_field(&self.calories, |c| {
-                UpdateProductMessage::UpdateFormCalories(c).into()
-            }),
-            render_input_form_field(&self.fats, |f| UpdateProductMessage::UpdateFormFats(f)
-                .into()),
-            render_input_form_field(&self.proteins, |p| {
-                UpdateProductMessage::UpdateFormProteins(p).into()
-            }),
-            render_input_form_field(&self.carbohydrates, |c| {
-                UpdateProductMessage::UpdateFormCarbohydrates(c).into()
-            }),
+impl Widget for UpdateProduct {
+    fn view(&self) -> Element<Message> {
+        let form = column![
+            self.name
+                .view(|n| { UpdateProductMessage::UpdateName(n).into() }),
+            self.company
+                .view(|c| { UpdateProductMessage::UpdateCompany(c).into() }),
+            self.calories
+                .view(|c| { UpdateProductMessage::UpdateCalories(c).into() }),
+            self.fats
+                .view(|f| { UpdateProductMessage::UpdateFats(f).into() }),
+            self.proteins
+                .view(|p| { UpdateProductMessage::UpdateProteins(p).into() }),
+            self.carbohydrates
+                .view(|c| { UpdateProductMessage::UpdateCarbohydrates(c).into() }),
         ]
-        .spacing(10)
-        .into()
+        .spacing(10);
+
+        let content = column![
+            Text::new("Update product").size(40),
+            form,
+            Button::new("Update").on_press(UpdateProductMessage::Submit.into())
+        ]
+        .spacing(10);
+
+        row![sidebar(), content]
+            .height(Length::Fill)
+            .padding(20)
+            .spacing(20)
+            .into()
+    }
+
+    fn update(&mut self, ctx: &mut Context, msg: Message) {
+        if let Message::UpdateProduct(msg) = msg {
+            match msg {
+                UpdateProductMessage::UpdateName(name) => {
+                    self.name.raw_input = name;
+                }
+                UpdateProductMessage::UpdateCompany(company) => {
+                    self.company.raw_input = company;
+                }
+                UpdateProductMessage::UpdateCalories(raw_calories) => {
+                    self.calories.raw_input = raw_calories;
+                }
+                UpdateProductMessage::UpdateFats(raw_fats) => {
+                    self.fats.raw_input = raw_fats;
+                }
+                UpdateProductMessage::UpdateProteins(raw_proteins) => {
+                    self.proteins.raw_input = raw_proteins;
+                }
+                UpdateProductMessage::UpdateCarbohydrates(raw_carbohydrates) => {
+                    self.carbohydrates.raw_input = raw_carbohydrates;
+                }
+                UpdateProductMessage::Submit => {
+                    if let Ok(product) = self.parse() {
+                        if let Some(err) = ctx.data.product.update(self.product_id, product).err() {
+                            match err {
+                                DataError::UniqueConstraintViolation(unique_field)
+                                    if unique_field == "products.name" =>
+                                {
+                                    self.name.error = Some(InputFormFieldError::Custom(
+                                        "Product with this name already exists".to_string(),
+                                    ))
+                                }
+                                _ => {
+                                    eprintln!("Error: {:?}", err);
+                                }
+                            }
+                        } else {
+                            ctx.next_widget = Some(NextWidget::ProductList);
+                        }
+                    };
+                }
+            }
+        }
     }
 }
