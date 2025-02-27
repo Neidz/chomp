@@ -27,30 +27,46 @@ impl From<ProductListMessage> for Message {
 pub struct ProductList {
     name_filter: InputFormField<String>,
     products: Vec<Product>,
+    filtered_products: Vec<Product>,
 }
 
 impl ProductList {
     pub fn new(products: Vec<Product>) -> Self {
         ProductList {
             name_filter: InputFormField::new("Product search", "Chicken"),
-            products,
+            products: products.clone(),
+            filtered_products: products,
         }
     }
 
     fn refresh(&mut self, ctx: &Context) {
-        let name_filter = if self.name_filter.raw_input.is_empty() {
-            None
+        self.products = ctx.data.product.list().unwrap();
+        self.filter();
+    }
+
+    fn filter(&mut self) {
+        let name_filter = self.name_filter.raw_input.clone();
+        if name_filter.is_empty() {
+            self.filtered_products = self.products.clone();
         } else {
-            Some(self.name_filter.raw_input.as_str())
-        };
-        self.products = ctx.data.product.list(name_filter).unwrap();
+            self.filtered_products = self
+                .products
+                .iter()
+                .filter(|p| {
+                    p.name
+                        .to_lowercase()
+                        .contains(name_filter.to_lowercase().as_str())
+                })
+                .cloned()
+                .collect();
+        }
     }
 }
 
 impl Widget for ProductList {
     fn view(&self) -> Element<Message> {
         let mut table = column![list_header_row()];
-        for (i, product) in self.products.iter().enumerate() {
+        for (i, product) in self.filtered_products.iter().enumerate() {
             table = table.push(list_row(product, i % 2 == 0))
         }
 
@@ -74,7 +90,7 @@ impl Widget for ProductList {
             match msg {
                 ProductListMessage::ProductSearch(s) => {
                     self.name_filter.raw_input = s;
-                    self.refresh(ctx);
+                    self.filter();
                 }
                 ProductListMessage::DeleteProduct(product_id) => {
                     ctx.data.product.delete(product_id).unwrap();

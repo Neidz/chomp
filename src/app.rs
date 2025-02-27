@@ -69,7 +69,7 @@ impl App {
             self.active_widget = match w {
                 NextWidget::Dashboard => Box::new(Dashboard::new()),
                 NextWidget::ProductList => {
-                    let products = self.ctx.data.product.list(None).unwrap();
+                    let products = self.ctx.data.product.list().unwrap();
                     Box::new(ProductList::new(products))
                 }
                 NextWidget::CreateProduct => Box::new(CreateProduct::new()),

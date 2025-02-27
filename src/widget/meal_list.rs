@@ -145,7 +145,7 @@ impl Widget for MealList {
                 MealListMessage::CreateMealProductFormMeal(meal_id) => match meal_id {
                     Some(id) => {
                         let meal = ctx.data.meal.read(id).unwrap();
-                        let products = ctx.data.product.list(None).unwrap();
+                        let products = ctx.data.product.list().unwrap();
                         self.add_meal_product_form = Some(MealProductForm::new(products, &meal));
                     }
                     None => {

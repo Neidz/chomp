@@ -121,18 +121,16 @@ impl ProductData {
         Ok(())
     }
 
-    pub fn list(&self, name_filter: Option<&str>) -> Result<Vec<Product>, DataError> {
+    pub fn list(&self) -> Result<Vec<Product>, DataError> {
         let query = "
             SELECT id, name, company, calories, fats, proteins, carbohydrates
-            FROM products
-            WHERE name LIKE ?1 OR ?1 IS NULL";
-        let args = params![name_filter.map(|f| format!("%{}%", f))];
+            FROM products";
 
         let db = self.db.borrow();
         let mut stmt = db.prepare(query)?;
 
         let product_iter = stmt
-            .query_map(args, |row| {
+            .query_map([], |row| {
                 Ok(Product {
                     id: row.get(0)?,
                     name: row.get(1)?,
