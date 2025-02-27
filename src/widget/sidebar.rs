@@ -8,11 +8,15 @@ use crate::app::{Message, NextWidget};
 pub fn sidebar() -> Element<'static, Message> {
     let buttons = vec![
         ("Dashboard", Message::ChangeWidget(NextWidget::Dashboard)),
+        ("Meal List", Message::ChangeWidget(NextWidget::MealList)),
+        (
+            "Product List",
+            Message::ChangeWidget(NextWidget::ProductList),
+        ),
         (
             "Create Product",
             Message::ChangeWidget(NextWidget::CreateProduct),
         ),
-        ("Meal List", Message::ChangeWidget(NextWidget::MealList)),
     ];
 
     let navigation = buttons

@@ -25,6 +25,9 @@ use super::{
 
 #[derive(Debug, Clone)]
 pub enum MealListMessage {
+    NextDay,
+    PrevDay,
+
     CreateMealProductFormMeal(Option<usize>),
     CreateMealProductFormWeight(String),
     CreateMealProductFormProduct(usize),
@@ -84,7 +87,12 @@ impl Widget for MealList {
         }
 
         let content = column![
-            Text::new("Meals").size(40),
+            row![
+                Text::new("Meals").size(40),
+                horizontal_space(),
+                day_changer(self.day)
+            ]
+            .align_y(Center),
             Scrollable::new(tables),
             vertical_space(),
             meal_stats(&self.stats)
@@ -126,10 +134,18 @@ impl Widget for MealList {
     fn update(&mut self, ctx: &mut Context, msg: Message) {
         if let Message::MealList(msg) = msg {
             match msg {
+                MealListMessage::NextDay => {
+                    self.day = self.day.checked_add_days(Days::new(1)).unwrap();
+                    self.refresh(ctx);
+                }
+                MealListMessage::PrevDay => {
+                    self.day = self.day.checked_sub_days(Days::new(1)).unwrap();
+                    self.refresh(ctx);
+                }
                 MealListMessage::CreateMealProductFormMeal(meal_id) => match meal_id {
                     Some(id) => {
                         let meal = ctx.data.meal.read(id).unwrap();
-                        let products = ctx.data.product.list().unwrap();
+                        let products = ctx.data.product.list(None).unwrap();
                         self.add_meal_product_form = Some(MealProductForm::new(products, &meal));
                     }
                     None => {
@@ -228,6 +244,31 @@ impl Widget for MealList {
             }
         }
     }
+}
+
+fn day_changer(day: NaiveDate) -> Element<'static, Message> {
+    let today = Local::now().date_naive();
+    let tomorrow = today.checked_add_days(Days::new(1)).unwrap();
+    let yesterday = today.checked_sub_days(Days::new(1)).unwrap();
+
+    let formatted_day = match day {
+        d if d == today => "Today".to_string(),
+        d if d == tomorrow => "Tomorrow".to_string(),
+        d if d == yesterday => "Yesterday".to_string(),
+        _ => day.format("%Y-%m-%d").to_string(),
+    };
+
+    row![
+        Button::new("<").on_press(MealListMessage::PrevDay.into()),
+        horizontal_space(),
+        Text::new(formatted_day).size(20),
+        horizontal_space(),
+        Button::new(">").on_press(MealListMessage::NextDay.into()),
+    ]
+    .align_y(Center)
+    .width(200)
+    .spacing(10)
+    .into()
 }
 
 fn render_meal(meal: &Meal) -> Element<Message> {
