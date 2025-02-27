@@ -75,7 +75,8 @@ impl MealList {
     }
 
     fn refresh(&mut self, ctx: &Context) {
-        self.meals = ctx.data.meal.list(self.day).unwrap();
+        self.meals = ctx.data.meal.list_or_create_default(self.day).unwrap();
+        self.stats = ctx.data.meal.day_stats(self.day).unwrap();
     }
 }
 
