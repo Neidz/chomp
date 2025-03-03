@@ -2,7 +2,8 @@ use std::{env, path::PathBuf};
 
 use migrate::migrate;
 use migrations::{
-    CREATE_MEALS_TABLE_QUERY_2, CREATE_MEAL_PRODUCTS_TABLE_QUERY_3, CREATE_PRODUCTS_TABLE_QUERY_1,
+    CREATE_CALORIE_TARGETS_TABLE_QUERY_4, CREATE_MEALS_TABLE_QUERY_2,
+    CREATE_MEAL_PRODUCTS_TABLE_QUERY_3, CREATE_PRODUCTS_TABLE_QUERY_1,
 };
 use rusqlite::Connection;
 
@@ -37,6 +38,7 @@ pub fn prepare_conn() -> Connection {
         CREATE_PRODUCTS_TABLE_QUERY_1,
         CREATE_MEALS_TABLE_QUERY_2,
         CREATE_MEAL_PRODUCTS_TABLE_QUERY_3,
+        CREATE_CALORIE_TARGETS_TABLE_QUERY_4,
     ];
     migrate(&conn, migrations).unwrap_or_else(|err| {
         panic!("Failed to perform database migrations: {}", err);

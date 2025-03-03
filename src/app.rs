@@ -5,9 +5,9 @@ use rusqlite::Connection;
 use crate::{
     data::Data,
     widget::{
-        CreateProduct, CreateProductMessage, Dashboard, DashboardMessage, MealList,
-        MealListMessage, ProductList, ProductListMessage, UpdateProduct, UpdateProductMessage,
-        Widget,
+        CalorieTargetList, CalorieTargetListMessage, CreateProduct, CreateProductMessage,
+        Dashboard, DashboardMessage, MealList, MealListMessage, ProductList, ProductListMessage,
+        UpdateProduct, UpdateProductMessage, Widget,
     },
 };
 
@@ -18,6 +18,7 @@ pub enum NextWidget {
     CreateProduct,
     UpdateProduct(usize),
     MealList,
+    CalorieTargetList,
 }
 
 #[derive(Debug, Clone)]
@@ -28,6 +29,7 @@ pub enum Message {
     CreateProduct(CreateProductMessage),
     UpdateProduct(UpdateProductMessage),
     MealList(MealListMessage),
+    CalorieTargetList(CalorieTargetListMessage),
 }
 
 pub struct Context {
@@ -81,7 +83,17 @@ impl App {
                     let day = Local::now().date_naive();
                     let meals = self.ctx.data.meal.list_or_create_default(day).unwrap();
                     let stats = self.ctx.data.meal.day_stats(day).unwrap();
-                    Box::new(MealList::new(day, meals, stats))
+                    let target = self
+                        .ctx
+                        .data
+                        .calorie_target
+                        .read_last_or_create_default()
+                        .unwrap();
+                    Box::new(MealList::new(day, meals, stats, target))
+                }
+                NextWidget::CalorieTargetList => {
+                    let targets = self.ctx.data.calorie_target.list().unwrap_or_default();
+                    Box::new(CalorieTargetList::new(targets))
                 }
             };
         }

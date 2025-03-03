@@ -2,6 +2,7 @@ use iced::Element;
 
 use crate::app::{Context, Message};
 
+mod calorie_target_list;
 mod create_product;
 mod dashboard;
 mod form_field;
@@ -11,6 +12,7 @@ mod product_list;
 mod sidebar;
 mod update_product;
 
+pub use calorie_target_list::{CalorieTargetList, CalorieTargetListMessage};
 pub use create_product::{CreateProduct, CreateProductMessage};
 pub use dashboard::{Dashboard, DashboardMessage};
 pub use meal_list::{MealList, MealListMessage};

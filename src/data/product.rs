@@ -124,12 +124,13 @@ impl ProductData {
     pub fn list(&self) -> Result<Vec<Product>, DataError> {
         let query = "
             SELECT id, name, company, calories, fats, proteins, carbohydrates
-            FROM products";
+            FROM products
+            ORDER BY id ASC";
 
         let db = self.db.borrow();
         let mut stmt = db.prepare(query)?;
 
-        let product_iter = stmt
+        let products = stmt
             .query_map([], |row| {
                 Ok(Product {
                     id: row.get(0)?,
@@ -141,12 +142,9 @@ impl ProductData {
                     carbohydrates: row.get(6)?,
                 })
             })
-            .map_err(DataError::from)?;
+            .map_err(DataError::from)?
+            .collect::<Result<Vec<Product>, _>>()?;
 
-        let mut products = Vec::new();
-        for product in product_iter {
-            products.push(product?);
-        }
         Ok(products)
     }
 }
