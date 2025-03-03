@@ -267,7 +267,7 @@ fn day_changer(day: NaiveDate) -> Element<'static, Message> {
         Button::new(">").on_press(MealListMessage::NextDay.into()),
     ]
     .align_y(Center)
-    .width(200)
+    .width(220)
     .spacing(10)
     .into()
 }
