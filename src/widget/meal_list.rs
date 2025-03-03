@@ -351,10 +351,14 @@ fn list_row(mp: &MealProduct, even: bool) -> Element<Message> {
 
 pub fn meal_stats(stats: &MealDayStats, target: &CalorieTarget) -> Element<'static, Message> {
     row![
-        meal_stat("Calories", stats.calories, target.calories),
-        meal_stat("Proteins", stats.proteins, target.proteins),
-        meal_stat("Fats", stats.fats, target.fats),
-        meal_stat("Carbohydrates", stats.carbohydrates, target.carbohydrates)
+        meal_stat("Calories", stats.calories, target.calories as f32),
+        meal_stat("Proteins", stats.proteins, target.proteins as f32),
+        meal_stat("Fats", stats.fats, target.fats as f32),
+        meal_stat(
+            "Carbohydrates",
+            stats.carbohydrates,
+            target.carbohydrates as f32
+        )
     ]
     .spacing(40)
     .width(Length::Fill)
