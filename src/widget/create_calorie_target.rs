@@ -1,0 +1,184 @@
+use chrono::NaiveDate;
+use iced::{
+    widget::{column, row, Button, Text},
+    Element, Length,
+};
+
+use crate::{
+    app::{Context, Message, NextWidget},
+    data::{CalorieTarget, DataError},
+};
+
+use super::{
+    form_field::{DayFormField, InputFormField, InputFormFieldError},
+    sidebar::sidebar,
+    Widget,
+};
+
+#[derive(Debug, Clone)]
+pub enum CreateCalorieTargetMessage {
+    UpdateDay(NaiveDate),
+    UpdateCalories(String),
+    UpdateFats(String),
+    UpdateProteins(String),
+    UpdateCarbohydrates(String),
+    Submit,
+}
+
+impl From<CreateCalorieTargetMessage> for Message {
+    fn from(value: CreateCalorieTargetMessage) -> Self {
+        Message::CreateCalorieTarget(value)
+    }
+}
+
+#[derive(Debug)]
+pub struct CreateCalorieTarget {
+    day: DayFormField,
+    calories: InputFormField<f64>,
+    fats: InputFormField<f64>,
+    proteins: InputFormField<f64>,
+    carbohydrates: InputFormField<f64>,
+}
+
+impl CreateCalorieTarget {
+    pub fn new() -> Self {
+        CreateCalorieTarget {
+            day: DayFormField::new("Date"),
+            calories: InputFormField::new("Calories* (kcal/day)", "2500.0"),
+            fats: InputFormField::new("Fats* (g/day)", "80.0"),
+            proteins: InputFormField::new("Proteins* (g/day)", "200.0"),
+            carbohydrates: InputFormField::new("Carbohydrates* (g/day)", "245.0"),
+        }
+    }
+
+    pub fn parse(&mut self) -> Result<CalorieTarget, String> {
+        self.calories.validate(|input| {
+            if input.is_empty() {
+                Err(InputFormFieldError::MissingRequiredValue)
+            } else {
+                match input.parse::<f64>() {
+                    Err(_) => Err(InputFormFieldError::InvalidNumber),
+                    Ok(val) if val < 0.0 => Err(InputFormFieldError::SmallerThanZero),
+                    Ok(val) => Ok(val),
+                }
+            }
+        });
+
+        self.fats.validate(|input| {
+            if input.is_empty() {
+                Err(InputFormFieldError::MissingRequiredValue)
+            } else {
+                match input.parse::<f64>() {
+                    Err(_) => Err(InputFormFieldError::InvalidNumber),
+                    Ok(val) if val < 0.0 => Err(InputFormFieldError::SmallerThanZero),
+                    Ok(val) => Ok(val),
+                }
+            }
+        });
+
+        self.proteins.validate(|input| {
+            if input.is_empty() {
+                Err(InputFormFieldError::MissingRequiredValue)
+            } else {
+                match input.parse::<f64>() {
+                    Err(_) => Err(InputFormFieldError::InvalidNumber),
+                    Ok(val) if val < 0.0 => Err(InputFormFieldError::SmallerThanZero),
+                    Ok(val) => Ok(val),
+                }
+            }
+        });
+
+        self.carbohydrates.validate(|input| {
+            if input.is_empty() {
+                Err(InputFormFieldError::MissingRequiredValue)
+            } else {
+                match input.parse::<f64>() {
+                    Err(_) => Err(InputFormFieldError::InvalidNumber),
+                    Ok(val) if val < 0.0 => Err(InputFormFieldError::SmallerThanZero),
+                    Ok(val) => Ok(val),
+                }
+            }
+        });
+
+        Ok(CalorieTarget {
+            day: self.day.value,
+            calories: self.calories.value.ok_or("validation failed")?,
+            fats: self.fats.value.ok_or("validation failed")?,
+            proteins: self.proteins.value.ok_or("validation failed")?,
+            carbohydrates: self.carbohydrates.value.ok_or("validation failed")?,
+        })
+    }
+}
+
+impl Widget for CreateCalorieTarget {
+    fn view(&self) -> Element<Message> {
+        let form = column![
+            self.day
+                .view(|d| { CreateCalorieTargetMessage::UpdateDay(d).into() }),
+            self.calories
+                .view(|c| { CreateCalorieTargetMessage::UpdateCalories(c).into() }),
+            self.fats
+                .view(|f| { CreateCalorieTargetMessage::UpdateFats(f).into() }),
+            self.proteins
+                .view(|p| { CreateCalorieTargetMessage::UpdateProteins(p).into() }),
+            self.carbohydrates
+                .view(|c| { CreateCalorieTargetMessage::UpdateCarbohydrates(c).into() }),
+        ]
+        .spacing(10);
+
+        let content = column![
+            Text::new("Create calorie target").size(40),
+            form,
+            Button::new("Create").on_press(CreateCalorieTargetMessage::Submit.into())
+        ]
+        .spacing(10);
+
+        row![sidebar(), content]
+            .height(Length::Fill)
+            .padding(20)
+            .spacing(20)
+            .into()
+    }
+
+    fn update(&mut self, ctx: &mut Context, msg: Message) {
+        if let Message::CreateCalorieTarget(msg) = msg {
+            match msg {
+                CreateCalorieTargetMessage::UpdateDay(day) => {
+                    self.day.value = day;
+                }
+                CreateCalorieTargetMessage::UpdateCalories(raw_calories) => {
+                    self.calories.raw_input = raw_calories;
+                }
+                CreateCalorieTargetMessage::UpdateFats(raw_fats) => {
+                    self.fats.raw_input = raw_fats;
+                }
+                CreateCalorieTargetMessage::UpdateProteins(raw_proteins) => {
+                    self.proteins.raw_input = raw_proteins;
+                }
+                CreateCalorieTargetMessage::UpdateCarbohydrates(raw_carbohydrates) => {
+                    self.carbohydrates.raw_input = raw_carbohydrates;
+                }
+                CreateCalorieTargetMessage::Submit => {
+                    if let Ok(target) = self.parse() {
+                        if let Some(err) = ctx.data.calorie_target.create(target).err() {
+                            match err {
+                                DataError::UniqueConstraintViolation(unique_field)
+                                    if unique_field == "calorie_targets.day" =>
+                                {
+                                    self.day.error = Some(InputFormFieldError::Custom(
+                                        "Target with this date already exists".to_string(),
+                                    ))
+                                }
+                                _ => {
+                                    eprintln!("Error: {:?}", err);
+                                }
+                            }
+                        } else {
+                            ctx.next_widget = Some(NextWidget::CalorieTargetList);
+                        }
+                    };
+                }
+            }
+        }
+    }
+}

@@ -21,6 +21,10 @@ pub fn sidebar() -> Element<'static, Message> {
             "Calorie Target List",
             Message::ChangeWidget(NextWidget::CalorieTargetList),
         ),
+        (
+            "Create Calorie Target",
+            Message::ChangeWidget(NextWidget::CreateCalorieTarget),
+        ),
     ];
 
     let navigation = buttons

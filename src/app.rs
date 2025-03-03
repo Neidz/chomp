@@ -5,8 +5,9 @@ use rusqlite::Connection;
 use crate::{
     data::Data,
     widget::{
-        CalorieTargetList, CalorieTargetListMessage, CreateProduct, CreateProductMessage,
-        Dashboard, DashboardMessage, MealList, MealListMessage, ProductList, ProductListMessage,
+        CalorieTargetList, CalorieTargetListMessage, CreateCalorieTarget,
+        CreateCalorieTargetMessage, CreateProduct, CreateProductMessage, Dashboard,
+        DashboardMessage, MealList, MealListMessage, ProductList, ProductListMessage,
         UpdateProduct, UpdateProductMessage, Widget,
     },
 };
@@ -19,6 +20,7 @@ pub enum NextWidget {
     UpdateProduct(usize),
     MealList,
     CalorieTargetList,
+    CreateCalorieTarget,
 }
 
 #[derive(Debug, Clone)]
@@ -30,6 +32,7 @@ pub enum Message {
     UpdateProduct(UpdateProductMessage),
     MealList(MealListMessage),
     CalorieTargetList(CalorieTargetListMessage),
+    CreateCalorieTarget(CreateCalorieTargetMessage),
 }
 
 pub struct Context {
@@ -60,7 +63,9 @@ impl App {
     }
 
     pub fn update(&mut self, msg: Message) {
-        match msg.clone() {
+        self.active_widget.update(&mut self.ctx, msg.clone());
+
+        match msg {
             Message::ChangeWidget(w) => {
                 self.ctx.next_widget = Some(w);
             }
@@ -95,9 +100,8 @@ impl App {
                     let targets = self.ctx.data.calorie_target.list().unwrap_or_default();
                     Box::new(CalorieTargetList::new(targets))
                 }
+                NextWidget::CreateCalorieTarget => Box::new(CreateCalorieTarget::new()),
             };
         }
-
-        self.active_widget.update(&mut self.ctx, msg);
     }
 }

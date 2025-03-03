@@ -41,8 +41,21 @@ impl From<SqliteError> for DataError {
 
                 DataError::UniqueConstraintViolation(field.to_string())
             }
+
             SqliteError::QueryReturnedNoRows => DataError::NoRows,
-            SqliteError::SqliteFailure(_, Some(msg)) => DataError::DatabaseError(msg),
+            SqliteError::SqliteFailure(_, Some(msg)) => {
+                if msg.starts_with("UNIQUE constraint failed:") {
+                    let field = msg
+                        .split(':')
+                        .nth(1)
+                        .map(|s| s.trim())
+                        .unwrap_or(msg.as_str());
+
+                    DataError::UniqueConstraintViolation(field.to_string())
+                } else {
+                    DataError::DatabaseError(msg)
+                }
+            }
             SqliteError::SqliteFailure(_, None) => {
                 DataError::DatabaseError("unexpected database error".to_string())
             }
