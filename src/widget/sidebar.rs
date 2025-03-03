@@ -17,6 +17,10 @@ pub fn sidebar() -> Element<'static, Message> {
             "Create Product",
             Message::ChangeWidget(NextWidget::CreateProduct),
         ),
+        (
+            "Calorie Target List",
+            Message::ChangeWidget(NextWidget::CalorieTargetList),
+        ),
     ];
 
     let navigation = buttons

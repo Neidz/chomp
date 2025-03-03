@@ -12,7 +12,10 @@ use iced::{
 
 use crate::{
     app::{Context, Message},
-    data::{AddMealProduct, Meal, MealDayStats, MealProduct, Product, UpdateMealProductWeight},
+    data::{
+        AddMealProduct, CalorieTarget, Meal, MealDayStats, MealProduct, Product,
+        UpdateMealProductWeight,
+    },
     style::TableRowStyle,
 };
 
@@ -55,6 +58,7 @@ pub struct MealList {
     day: NaiveDate,
     meals: Vec<Meal>,
     stats: MealDayStats,
+    target: CalorieTarget,
 
     add_meal_product_form: Option<MealProductForm>,
     update_meal_product_form: Option<UpdateMealProductForm>,
@@ -62,12 +66,18 @@ pub struct MealList {
 }
 
 impl MealList {
-    pub fn new(day: NaiveDate, meals: Vec<Meal>, stats: MealDayStats) -> Self {
+    pub fn new(
+        day: NaiveDate,
+        meals: Vec<Meal>,
+        stats: MealDayStats,
+        target: CalorieTarget,
+    ) -> Self {
         assert!(!meals.is_empty());
         MealList {
             day,
             meals,
             stats,
+            target,
             add_meal_product_form: None,
             update_meal_product_form: None,
             copy_meal_products_form: None,
@@ -96,7 +106,7 @@ impl Widget for MealList {
             .align_y(Center),
             Scrollable::new(tables),
             vertical_space(),
-            meal_stats(&self.stats)
+            meal_stats(&self.stats, &self.target)
         ]
         .spacing(10);
 
@@ -339,12 +349,12 @@ fn list_row(mp: &MealProduct, even: bool) -> Element<Message> {
         .into()
 }
 
-pub fn meal_stats(stats: &MealDayStats) -> Element<Message> {
+pub fn meal_stats(stats: &MealDayStats, target: &CalorieTarget) -> Element<'static, Message> {
     row![
-        meal_stat("Calories", stats.calories, 2500.0),
-        meal_stat("Proteins", stats.proteins, 200.0),
-        meal_stat("Fats", stats.fats, 60.0),
-        meal_stat("Carbohydrates", stats.carbohydrates, 300.0)
+        meal_stat("Calories", stats.calories, target.calories),
+        meal_stat("Proteins", stats.proteins, target.proteins),
+        meal_stat("Fats", stats.fats, target.fats),
+        meal_stat("Carbohydrates", stats.carbohydrates, target.carbohydrates)
     ]
     .spacing(40)
     .width(Length::Fill)

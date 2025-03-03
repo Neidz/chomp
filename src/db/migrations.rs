@@ -39,3 +39,15 @@ pub const CREATE_MEAL_PRODUCTS_TABLE_QUERY_3: Migration = Migration {
         );",
     id: 3,
 };
+
+pub const CREATE_CALORIE_TARGETS_TABLE_QUERY_4: Migration = Migration {
+    query: "
+        CREATE TABLE IF NOT EXISTS calorie_targets (
+            day TEXT PRIMARY KEY NOT NULL,
+            calories REAL NOT NULL,
+            fats REAL NOT NULL,
+            proteins REAL NOT NULL,
+            carbohydrates REAL NOT NULL
+        );",
+    id: 4,
+};
