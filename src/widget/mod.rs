@@ -11,6 +11,7 @@ mod meal_list;
 mod modal;
 mod product_list;
 mod sidebar;
+mod update_calorie_target;
 mod update_product;
 
 pub use calorie_target_list::{CalorieTargetList, CalorieTargetListMessage};
@@ -19,6 +20,7 @@ pub use create_product::{CreateProduct, CreateProductMessage};
 pub use dashboard::{Dashboard, DashboardMessage};
 pub use meal_list::{MealList, MealListMessage};
 pub use product_list::{ProductList, ProductListMessage};
+pub use update_calorie_target::{UpdateCalorieTarget, UpdateCalorieTargetMessage};
 pub use update_product::{UpdateProduct, UpdateProductMessage};
 
 pub trait Widget {

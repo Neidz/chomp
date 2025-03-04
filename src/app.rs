@@ -1,4 +1,4 @@
-use chrono::Local;
+use chrono::{Local, NaiveDate};
 use iced::Element;
 use rusqlite::Connection;
 
@@ -8,7 +8,8 @@ use crate::{
         CalorieTargetList, CalorieTargetListMessage, CreateCalorieTarget,
         CreateCalorieTargetMessage, CreateProduct, CreateProductMessage, Dashboard,
         DashboardMessage, MealList, MealListMessage, ProductList, ProductListMessage,
-        UpdateProduct, UpdateProductMessage, Widget,
+        UpdateCalorieTarget, UpdateCalorieTargetMessage, UpdateProduct, UpdateProductMessage,
+        Widget,
     },
 };
 
@@ -21,6 +22,7 @@ pub enum NextWidget {
     MealList,
     CalorieTargetList,
     CreateCalorieTarget,
+    UpdateCalorieTarget(NaiveDate),
 }
 
 #[derive(Debug, Clone)]
@@ -33,6 +35,7 @@ pub enum Message {
     MealList(MealListMessage),
     CalorieTargetList(CalorieTargetListMessage),
     CreateCalorieTarget(CreateCalorieTargetMessage),
+    UpdateCalorieTarget(UpdateCalorieTargetMessage),
 }
 
 pub struct Context {
@@ -98,6 +101,10 @@ impl App {
                     Box::new(CalorieTargetList::new(targets))
                 }
                 NextWidget::CreateCalorieTarget => Box::new(CreateCalorieTarget::new()),
+                NextWidget::UpdateCalorieTarget(day) => {
+                    let target = self.ctx.data.calorie_target.read(day).unwrap();
+                    Box::new(UpdateCalorieTarget::new(target))
+                }
             };
         }
     }

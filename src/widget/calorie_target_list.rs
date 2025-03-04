@@ -5,7 +5,7 @@ use iced::{
 };
 
 use crate::{
-    app::{Context, Message},
+    app::{Context, Message, NextWidget},
     data::CalorieTarget,
     style::TableRowStyle,
 };
@@ -92,9 +92,13 @@ fn list_row(t: &CalorieTarget, even: bool) -> Element<Message> {
         Text::new(format!("{:.1}", t.fats)).width(Length::Fill),
         Text::new(format!("{:.1}", t.proteins)).width(Length::Fill),
         Text::new(format!("{:.1}", t.carbohydrates)).width(Length::Fill),
-        row![Button::new("Delete").on_press(CalorieTargetListMessage::DeleteTarget(t.day).into())]
-            .spacing(10)
-            .width(Length::Fill)
+        row![
+            Button::new("Update")
+                .on_press(Message::ChangeWidget(NextWidget::UpdateCalorieTarget(t.day)).into()),
+            Button::new("Delete").on_press(CalorieTargetListMessage::DeleteTarget(t.day).into())
+        ]
+        .spacing(10)
+        .width(Length::Fill)
     ]
     .padding(10)
     .width(Length::Fill);
