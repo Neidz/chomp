@@ -93,8 +93,9 @@ fn list_row(t: &CalorieTarget, even: bool) -> Element<Message> {
         Text::new(format!("{:.1}", t.proteins)).width(Length::Fill),
         Text::new(format!("{:.1}", t.carbohydrates)).width(Length::Fill),
         row![
-            Button::new("Update")
-                .on_press(Message::ChangeWidget(NextWidget::UpdateCalorieTarget(t.day)).into()),
+            Button::new("Update").on_press(Message::ChangeWidget(NextWidget::UpdateCalorieTarget(
+                t.day
+            ))),
             Button::new("Delete").on_press(CalorieTargetListMessage::DeleteTarget(t.day).into())
         ]
         .spacing(10)
