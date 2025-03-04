@@ -65,11 +65,8 @@ impl App {
     pub fn update(&mut self, msg: Message) {
         self.active_widget.update(&mut self.ctx, msg.clone());
 
-        match msg {
-            Message::ChangeWidget(w) => {
-                self.ctx.next_widget = Some(w);
-            }
-            _ => {}
+        if let Message::ChangeWidget(w) = msg {
+            self.ctx.next_widget = Some(w);
         }
 
         if let Some(w) = self.ctx.next_widget.take() {
