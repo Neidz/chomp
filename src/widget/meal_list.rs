@@ -6,8 +6,7 @@ use iced::{
         column, combo_box, container, horizontal_space, progress_bar, row, vertical_space, Button,
         Container, Scrollable, Text,
     },
-    Alignment::Center,
-    Element, Length,
+    Alignment, Element, Length,
 };
 
 use crate::{
@@ -16,13 +15,13 @@ use crate::{
         AddMealProduct, CalorieTarget, Meal, MealDayStats, MealProduct, Product,
         UpdateMealProductWeight,
     },
-    style::TableRowStyle,
 };
 
 use super::{
     form_field::{InputFormField, InputFormFieldError},
     modal::modal,
     sidebar::sidebar,
+    style::TableRowStyle,
     Widget,
 };
 
@@ -103,7 +102,7 @@ impl Widget for MealList {
                 horizontal_space(),
                 day_changer(self.day)
             ]
-            .align_y(Center),
+            .align_y(Alignment::Center),
             Scrollable::new(tables),
             vertical_space(),
             meal_stats(&self.stats, &self.target)
@@ -276,7 +275,7 @@ fn day_changer(day: NaiveDate) -> Element<'static, Message> {
         horizontal_space(),
         Button::new(">").on_press(MealListMessage::NextDay.into()),
     ]
-    .align_y(Center)
+    .align_y(Alignment::Center)
     .width(220)
     .spacing(10)
     .into()
@@ -413,7 +412,7 @@ fn meal_stat(label: &str, value: f32, max_value: f32) -> Element<Message> {
         Text::new(format!("{} {:.1}/{:.1}", label, value, max_value)),
         progress_bar(0.0..=100.0, value / max_value * 100.0),
     ]
-    .align_x(Center)
+    .align_x(Alignment::Center)
     .spacing(2)
     .into()
 }
@@ -633,7 +632,7 @@ pub fn render_copy_meal_products_form(form: &CopyMealProductsForm) -> Element<Me
             .into()
         ),
     ]
-    .align_y(Center)
+    .align_y(Alignment::Center)
     .width(Length::Fill)
     .spacing(10);
 

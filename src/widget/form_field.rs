@@ -3,8 +3,7 @@ use std::fmt::{self};
 use chrono::{Days, Local, NaiveDate};
 use iced::{
     widget::{column, horizontal_space, row, Button, Text, TextInput},
-    Alignment::Center,
-    Color, Element,
+    Alignment, Color, Element,
 };
 
 use crate::app::Message;
@@ -146,7 +145,7 @@ impl DayFormField {
                 self.value.checked_add_days(Days::new(1)).unwrap()
             )),
         ]
-        .align_y(Center)
+        .align_y(Alignment::Center)
         .width(220)
         .spacing(10);
 

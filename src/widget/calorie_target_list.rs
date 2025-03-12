@@ -1,19 +1,19 @@
 use chrono::NaiveDate;
 use iced::{
     widget::{column, row, Button, Container, Scrollable, Text},
-    Element, Length,
+    Alignment, Element, Length,
 };
 
 use crate::{
     app::{Context, Message, NextWidget},
     data::CalorieTarget,
-    style::TableRowStyle,
 };
 
-use super::{sidebar::sidebar, Widget};
+use super::{sidebar::sidebar, style::TableRowStyle, Widget};
 
 #[derive(Debug, Clone)]
 pub enum CalorieTargetListMessage {
+    RedirectToCreate,
     DeleteTarget(NaiveDate),
 }
 
@@ -46,7 +46,12 @@ impl Widget for CalorieTargetList {
         }
 
         let content = column![
-            Text::new("Calorie target list").size(40),
+            row![
+                Text::new("Calorie target list").size(40),
+                Button::new("+").on_press(CalorieTargetListMessage::RedirectToCreate.into())
+            ]
+            .spacing(10)
+            .align_y(Alignment::Center),
             Scrollable::new(table)
         ]
         .spacing(10);
@@ -61,6 +66,9 @@ impl Widget for CalorieTargetList {
     fn update(&mut self, ctx: &mut Context, msg: Message) {
         if let Message::CalorieTargetList(msg) = msg {
             match msg {
+                CalorieTargetListMessage::RedirectToCreate => {
+                    ctx.next_widget = Some(NextWidget::CreateCalorieTarget);
+                }
                 CalorieTargetListMessage::DeleteTarget(day) => {
                     ctx.data.calorie_target.delete(day).unwrap();
                     self.refresh(ctx);

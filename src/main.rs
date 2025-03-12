@@ -5,7 +5,6 @@ use iced::{Task, Theme};
 mod app;
 mod data;
 mod db;
-mod style;
 mod widget;
 
 fn main() -> iced::Result {

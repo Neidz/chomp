@@ -11,6 +11,7 @@ mod meal_list;
 mod modal;
 mod product_list;
 mod sidebar;
+mod style;
 mod update_calorie_target;
 mod update_product;
 

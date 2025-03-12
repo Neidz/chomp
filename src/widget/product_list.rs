@@ -1,18 +1,18 @@
 use iced::{
     widget::{column, row, Button, Container, Scrollable, Text},
-    Element, Length,
+    Alignment, Element, Length,
 };
 
 use crate::{
     app::{Context, Message, NextWidget},
     data::Product,
-    style::TableRowStyle,
 };
 
-use super::{form_field::InputFormField, sidebar::sidebar, Widget};
+use super::{form_field::InputFormField, sidebar::sidebar, style::TableRowStyle, Widget};
 
 #[derive(Debug, Clone)]
 pub enum ProductListMessage {
+    RedirectToCreate,
     ProductSearch(String),
     DeleteProduct(usize),
 }
@@ -71,7 +71,12 @@ impl Widget for ProductList {
         }
 
         let content = column![
-            Text::new("Product list").size(40),
+            row![
+                Text::new("Product list").size(40),
+                Button::new("+").on_press(ProductListMessage::RedirectToCreate.into())
+            ]
+            .spacing(10)
+            .align_y(Alignment::Center),
             self.name_filter
                 .view(|s| ProductListMessage::ProductSearch(s).into()),
             Scrollable::new(table)
@@ -88,6 +93,9 @@ impl Widget for ProductList {
     fn update(&mut self, ctx: &mut Context, msg: Message) {
         if let Message::ProductList(msg) = msg {
             match msg {
+                ProductListMessage::RedirectToCreate => {
+                    ctx.next_widget = Some(NextWidget::CreateProduct);
+                }
                 ProductListMessage::ProductSearch(s) => {
                     self.name_filter.raw_input = s;
                     self.filter();
