@@ -295,8 +295,27 @@ fn render_meal(meal: &Meal) -> Element<Message> {
         list_header_row()
     ];
 
+    let mut calories_sum = 0f64;
+    let mut fats_sum = 0f64;
+    let mut proteins_sum = 0f64;
+    let mut carbohydrates_sum = 0f64;
+
     for (i, meal_product) in meal.products.iter().enumerate() {
+        calories_sum += meal_product.calories;
+        fats_sum += meal_product.fats;
+        proteins_sum += meal_product.proteins;
+        carbohydrates_sum += meal_product.carbohydrates;
+
         table = table.push(list_row(meal_product, i % 2 == 0));
+    }
+
+    if !meal.products.is_empty() {
+        table = table.push(list_footer(
+            calories_sum,
+            fats_sum,
+            proteins_sum,
+            carbohydrates_sum,
+        ));
     }
 
     table.into()
@@ -346,6 +365,30 @@ fn list_row(mp: &MealProduct, even: bool) -> Element<Message> {
                 TableRowStyle::Odd.style(t)
             }
         })
+        .into()
+}
+
+fn list_footer(
+    calories_sum: f64,
+    fats_sum: f64,
+    proteins_sum: f64,
+    carbohydrates_sum: f64,
+) -> Element<'static, Message> {
+    let row = row![
+        Text::new("Sum").width(Length::Fill),
+        Text::new("").width(Length::Fill),
+        Text::new(format!("{:.1}", calories_sum)).width(Length::Fill),
+        Text::new(format!("{:.1}", fats_sum)).width(Length::Fill),
+        Text::new(format!("{:.1}", proteins_sum)).width(Length::Fill),
+        Text::new(format!("{:.1}", carbohydrates_sum)).width(Length::Fill),
+        Text::new("").width(Length::Fill),
+    ]
+    .padding(10)
+    .width(Length::Fill);
+
+    Container::new(row)
+        .style(|t| TableRowStyle::Footer.style(t))
+        .width(Length::Fill)
         .into()
 }
 

@@ -70,10 +70,6 @@ pub struct UpdateMealProductWeight {
     pub weight: f64,
 }
 
-pub struct MealData {
-    db: Rc<RefCell<Connection>>,
-}
-
 #[derive(Debug)]
 pub struct CreateMeal {
     pub day: NaiveDate,
@@ -89,7 +85,10 @@ pub struct MealDayStats {
     pub carbohydrates: f32,
 }
 
-#[allow(unused)]
+pub struct MealData {
+    db: Rc<RefCell<Connection>>,
+}
+
 impl MealData {
     pub fn new(db: Rc<RefCell<Connection>>) -> Self {
         MealData { db }
@@ -217,7 +216,7 @@ impl MealData {
             .map_err(DataError::from)?
             .collect::<Result<Vec<_>, _>>()?;
 
-        let (meal_id, meal_day, meal_name, meal_position, meal_product) = rows[0].clone();
+        let (meal_id, meal_day, meal_name, meal_position, _) = rows[0].clone();
         let mut meal = Meal {
             id: meal_id,
             day: meal_day,
@@ -226,7 +225,7 @@ impl MealData {
             products: Vec::new(),
         };
 
-        for (meal_id, meal_day, meal_name, meal_position, meal_product) in rows {
+        for (_, _, _, _, meal_product) in rows {
             if let Some(product) = meal_product {
                 meal.products.push(product);
             }
@@ -365,19 +364,6 @@ impl MealData {
         sorted_meals.sort();
 
         Ok(sorted_meals)
-    }
-
-    pub fn delete(&self, id: usize) -> Result<(), DataError> {
-        let query = "
-            DELETE FROM meal_products
-    	    WHERE id = ?1";
-        let args = params![id];
-
-        let db = self.db.borrow();
-        let mut stmt = db.prepare(query)?;
-        stmt.execute(args).map_err(DataError::from)?;
-
-        Ok(())
     }
 
     pub fn day_stats(&self, day: NaiveDate) -> Result<MealDayStats, DataError> {
