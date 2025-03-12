@@ -7,6 +7,7 @@ mod create_calorie_target;
 mod create_product;
 mod dashboard;
 mod form_field;
+mod line_chart;
 mod meal_list;
 mod modal;
 mod product_list;
