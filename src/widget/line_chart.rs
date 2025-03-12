@@ -1,17 +1,18 @@
 use iced::{
     event::Status,
     mouse::{Cursor, Interaction},
-    widget::canvas::{self, Cache, Event, Geometry},
-    Rectangle, Renderer, Size, Theme,
+    widget::canvas::{self, Cache, Event, Geometry, Path, Stroke},
+    Point, Rectangle, Renderer, Size, Theme,
 };
 
 use crate::app::Message;
 
 #[derive(Debug)]
 pub struct LineChart {
-    cache: Cache,
+    pub cache: Cache,
 }
 
+#[allow(unused)]
 impl LineChart {
     pub fn new() -> Self {
         LineChart {
@@ -48,6 +49,18 @@ impl canvas::Program<Message> for LineChart {
         };
 
         let graph = self.cache.draw(renderer, bounds.size(), |frame| {
+            let start = Point {
+                x: frame.center().x - 30.0,
+                y: frame.center().y - 30.0,
+            };
+            let end = Point {
+                x: frame.center().x + 30.0,
+                y: frame.center().y + 30.0,
+            };
+
+            let path = Path::line(start, end);
+            let stroke = Stroke::default().with_width(4.0);
+            frame.stroke(&path, stroke);
             frame.fill_rectangle(frame.center(), Size::new(10.0, 10.0), graph_fill);
         });
         vec![graph]
