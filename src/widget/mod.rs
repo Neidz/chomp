@@ -16,14 +16,14 @@ mod style;
 mod update_calorie_target;
 mod update_product;
 
-pub use calorie_target_list::{CalorieTargetList, CalorieTargetListMessage};
-pub use create_calorie_target::{CreateCalorieTarget, CreateCalorieTargetMessage};
-pub use create_product::{CreateProduct, CreateProductMessage};
-pub use dashboard::{Dashboard, DashboardMessage};
-pub use meal_list::{MealList, MealListMessage};
-pub use product_list::{ProductList, ProductListMessage};
-pub use update_calorie_target::{UpdateCalorieTarget, UpdateCalorieTargetMessage};
-pub use update_product::{UpdateProduct, UpdateProductMessage};
+pub use calorie_target_list::*;
+pub use create_calorie_target::*;
+pub use create_product::*;
+pub use dashboard::*;
+pub use meal_list::*;
+pub use product_list::*;
+pub use update_calorie_target::*;
+pub use update_product::*;
 
 pub trait Widget {
     fn view(&self) -> Element<Message>;
