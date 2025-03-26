@@ -154,8 +154,8 @@ impl Widget for MealList {
     }
 
     fn update(&mut self, ctx: &mut Context, msg: Message) {
-        if let Message::MealList(msg) = msg {
-            match msg {
+        match msg {
+            Message::MealList(msg) => match msg {
                 MealListMessage::NextDay => {
                     self.day = self.day.checked_add_days(Days::new(1)).unwrap();
                     self.refresh(ctx);
@@ -180,6 +180,7 @@ impl Widget for MealList {
                         self.add_meal_product_form = None;
                     }
                 },
+
                 MealListMessage::CreateMealProductFormWeight(raw_weight) => {
                     let form = self.add_meal_product_form.as_mut().unwrap();
                     form.weight.raw_input = raw_weight;
@@ -304,7 +305,13 @@ impl Widget for MealList {
                         }
                     }
                 }
+            },
+            Message::EscapeClicked => {
+                self.update_meal_product_form = None;
+                self.copy_meal_products_form = None;
+                self.add_meal_product_form = None;
             }
+            _ => {}
         }
     }
 }

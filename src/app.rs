@@ -30,8 +30,9 @@ pub enum NextWidget {
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    FocusNext,
-    FocusPrev,
+    TabClicked,
+    ShiftTabClicked,
+    EscapeClicked,
     ChangeWidget(NextWidget),
     Dashboard(DashboardMessage),
     ProductList(ProductListMessage),
@@ -145,8 +146,8 @@ impl App {
         }
 
         match msg {
-            Message::FocusNext => widget::focus_next(),
-            Message::FocusPrev => widget::focus_previous(),
+            Message::TabClicked => widget::focus_next(),
+            Message::ShiftTabClicked => widget::focus_previous(),
             _ => Task::none(),
         }
     }
@@ -158,8 +159,9 @@ impl App {
             };
 
             match (key, modifiers) {
-                (keyboard::key::Named::Tab, Modifiers::SHIFT) => Some(Message::FocusPrev),
-                (keyboard::key::Named::Tab, _) => Some(Message::FocusNext),
+                (keyboard::key::Named::Tab, Modifiers::SHIFT) => Some(Message::ShiftTabClicked),
+                (keyboard::key::Named::Tab, _) => Some(Message::TabClicked),
+                (keyboard::key::Named::Escape, _) => Some(Message::EscapeClicked),
                 _ => None,
             }
         })
