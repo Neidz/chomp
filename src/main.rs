@@ -22,5 +22,6 @@ fn main() -> iced::Result {
 
     iced::application("Chomp", App::update, App::view)
         .theme(|_| Theme::CatppuccinFrappe)
+        .subscription(App::subscription)
         .run_with(|| (App::new(db), Task::none()))
 }

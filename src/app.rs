@@ -1,5 +1,8 @@
 use chrono::{Local, NaiveDate};
-use iced::Element;
+use iced::{
+    keyboard::{self, Modifiers},
+    widget, Element, Subscription, Task,
+};
 use rusqlite::Connection;
 
 use crate::{
@@ -27,6 +30,8 @@ pub enum NextWidget {
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    FocusNext,
+    FocusPrev,
     ChangeWidget(NextWidget),
     Dashboard(DashboardMessage),
     ProductList(ProductListMessage),
@@ -65,10 +70,10 @@ impl App {
         self.active_widget.view()
     }
 
-    pub fn update(&mut self, msg: Message) {
+    pub fn update(&mut self, msg: Message) -> Task<Message> {
         self.active_widget.update(&mut self.ctx, msg.clone());
 
-        if let Message::ChangeWidget(w) = msg {
+        if let Message::ChangeWidget(w) = msg.clone() {
             self.ctx.next_widget = Some(w);
         }
 
@@ -138,5 +143,25 @@ impl App {
                 }
             };
         }
+
+        match msg {
+            Message::FocusNext => widget::focus_next(),
+            Message::FocusPrev => widget::focus_previous(),
+            _ => Task::none(),
+        }
+    }
+
+    pub fn subscription(&self) -> Subscription<Message> {
+        keyboard::on_key_press(|key, modifiers| {
+            let keyboard::Key::Named(key) = key else {
+                return None;
+            };
+
+            match (key, modifiers) {
+                (keyboard::key::Named::Tab, Modifiers::SHIFT) => Some(Message::FocusPrev),
+                (keyboard::key::Named::Tab, _) => Some(Message::FocusNext),
+                _ => None,
+            }
+        })
     }
 }
