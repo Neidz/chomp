@@ -84,8 +84,20 @@ impl MealList {
     }
 
     fn refresh(&mut self, ctx: &Context) {
-        self.meals = ctx.data.meal.list_or_create_default(self.day).unwrap();
-        self.stats = ctx.data.meal.day_stats(self.day).unwrap();
+        self.meals = match ctx.data.meal.list_or_create_default(self.day) {
+            Ok(m) => m,
+            Err(err) => {
+                tracing::error!("Failed to get list of meals: {}", err);
+                panic!();
+            }
+        };
+        self.stats = match ctx.data.meal.day_stats(self.day) {
+            Ok(s) => s,
+            Err(err) => {
+                tracing::error!("Failed to get day stats: {}", err);
+                panic!();
+            }
+        };
     }
 }
 
@@ -154,8 +166,14 @@ impl Widget for MealList {
                 }
                 MealListMessage::CreateMealProductFormMeal(meal_id) => match meal_id {
                     Some(id) => {
-                        let meal = ctx.data.meal.read(id).unwrap();
-                        let products = ctx.data.product.list().unwrap();
+                        let meal = match ctx.data.meal.read(id) {
+                            Ok(m) => m,
+                            Err(err) => {
+                                tracing::error!("Failed to get meal: {}", err);
+                                panic!();
+                            }
+                        };
+                        let products = ctx.data.product.list().unwrap_or_default();
                         self.add_meal_product_form = Some(MealProductForm::new(products, &meal));
                     }
                     None => {
@@ -171,19 +189,30 @@ impl Widget for MealList {
                     form.product_id = Some(product_id);
                 }
                 MealListMessage::SubmitAddMealProductForm => {
-                    if let Ok(add_meal_product) =
-                        self.add_meal_product_form.as_mut().unwrap().parse()
-                    {
-                        ctx.data.meal.add_product(add_meal_product).unwrap();
-
-                        self.refresh(ctx);
-                        self.add_meal_product_form = None;
+                    match self.add_meal_product_form.as_mut().unwrap().parse() {
+                        Ok(add_meal_product) => {
+                            if let Err(err) = ctx.data.meal.add_product(add_meal_product) {
+                                tracing::error!("Failed to add product: {}", err);
+                                panic!();
+                            }
+                            self.refresh(ctx);
+                            self.add_meal_product_form = None;
+                        }
+                        Err(err) => {
+                            tracing::warn!("Failed to parse add meal product form: {}", err)
+                        }
                     }
                 }
                 MealListMessage::UpdateMealProductFormMealProduct(meal_product_id) => {
                     match meal_product_id {
                         Some(id) => {
-                            let meal_product = ctx.data.meal.read_product(id).unwrap();
+                            let meal_product = match ctx.data.meal.read_product(id) {
+                                Ok(mp) => mp,
+                                Err(err) => {
+                                    tracing::error!("Failed to get meal product: {}", err);
+                                    panic!();
+                                }
+                            };
                             self.update_meal_product_form =
                                 Some(UpdateMealProductForm::new(&meal_product));
                         }
@@ -197,25 +226,37 @@ impl Widget for MealList {
                     form.weight.raw_input = raw_weight;
                 }
                 MealListMessage::SubmitUpdateMealProductForm => {
-                    if let Ok(update_meal_product_weight) =
-                        self.update_meal_product_form.as_mut().unwrap().parse()
-                    {
-                        ctx.data
-                            .meal
-                            .update_product_weight(update_meal_product_weight)
-                            .unwrap();
+                    match self.update_meal_product_form.as_mut().unwrap().parse() {
+                        Ok(update_meal_product_weight) => {
+                            ctx.data
+                                .meal
+                                .update_product_weight(update_meal_product_weight)
+                                .unwrap();
 
-                        self.refresh(ctx);
-                        self.update_meal_product_form = None;
+                            self.refresh(ctx);
+                            self.update_meal_product_form = None;
+                        }
+                        Err(err) => {
+                            tracing::warn!("Failed to parse update meal product form: {}", err)
+                        }
                     }
                 }
                 MealListMessage::DeleteMealProduct(meal_product_id) => {
-                    ctx.data.meal.delete_product(meal_product_id).unwrap();
+                    if let Err(err) = ctx.data.meal.delete_product(meal_product_id) {
+                        tracing::error!("Failed to delete meal product: {}", err);
+                        panic!();
+                    }
                     self.refresh(ctx);
                 }
                 MealListMessage::CopyMealProductsMeal(meal_id) => match meal_id {
                     Some(id) => {
-                        let meal = ctx.data.meal.read(id).unwrap();
+                        let meal = match ctx.data.meal.read(id) {
+                            Ok(m) => m,
+                            Err(err) => {
+                                tracing::error!("Failed to get meal: {}", err);
+                                panic!();
+                            }
+                        };
                         let prev_day = meal.day.checked_sub_days(Days::new(1)).unwrap();
                         let prev_day_meal =
                             ctx.data.meal.read_by_day_and_name(prev_day, &meal.name);
@@ -241,14 +282,26 @@ impl Widget for MealList {
                     form.meal_products = new_products;
                 }
                 MealListMessage::SubmitCopyMealProductsForm => {
-                    if let Ok(add_meal_products) =
-                        self.copy_meal_products_form.as_mut().unwrap().parse()
-                    {
-                        add_meal_products.into_iter().for_each(|add_meal_product| {
-                            let _ = ctx.data.meal.add_product(add_meal_product);
-                        });
-                        self.refresh(ctx);
-                        self.copy_meal_products_form = None;
+                    match self.copy_meal_products_form.as_mut().unwrap().parse() {
+                        Ok(add_meal_products) => {
+                            add_meal_products.into_iter().for_each(|add_meal_product| {
+                                if let Err(err) = ctx.data.meal.add_product(add_meal_product) {
+                                    tracing::error!(
+                                        "Failed to add meal product while copying meal: {}",
+                                        err
+                                    );
+                                    panic!();
+                                }
+                            });
+                            self.refresh(ctx);
+                            self.copy_meal_products_form = None;
+                        }
+                        Err(err) => {
+                            tracing::warn!(
+                                "Failed to parse form for copying meal products: {}",
+                                err
+                            );
+                        }
                     }
                 }
             }

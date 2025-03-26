@@ -174,7 +174,10 @@ impl Widget for UpdateCalorieTarget {
                 }
                 UpdateCalorieTargetMessage::Submit => {
                     if let Ok(target) = self.parse() {
-                        ctx.data.calorie_target.update(target).unwrap();
+                        if let Err(err) = ctx.data.calorie_target.update(target) {
+                            tracing::error!("Failed to update calorie target: {}", err);
+                            panic!();
+                        }
                         ctx.next_widget = Some(NextWidget::CalorieTargetList);
                     };
                 }

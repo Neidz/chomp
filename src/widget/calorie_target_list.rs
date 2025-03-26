@@ -34,7 +34,7 @@ impl CalorieTargetList {
     }
 
     fn refresh(&mut self, ctx: &Context) {
-        self.targets = ctx.data.calorie_target.list().unwrap();
+        self.targets = ctx.data.calorie_target.list().unwrap_or_default();
     }
 }
 
@@ -70,7 +70,10 @@ impl Widget for CalorieTargetList {
                     ctx.next_widget = Some(NextWidget::CreateCalorieTarget);
                 }
                 CalorieTargetListMessage::DeleteTarget(day) => {
-                    ctx.data.calorie_target.delete(day).unwrap();
+                    if let Err(err) = ctx.data.calorie_target.delete(day) {
+                        tracing::error!("Failed to delete calorie target: {}", err);
+                        panic!();
+                    }
                     self.refresh(ctx);
                 }
             }

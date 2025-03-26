@@ -19,20 +19,38 @@ fn get_home_dir() -> Option<PathBuf> {
 }
 
 pub fn prepare_conn() -> Connection {
-    let home = get_home_dir().expect("Unable to get home directory");
-
+    let home = match get_home_dir() {
+        Some(d) => d,
+        None => {
+            tracing::error!("Failed to get home directory");
+            panic!();
+        }
+    };
     let db_path: PathBuf = home
         .join(".local")
         .join("share")
         .join("chomp")
         .join("data-gui.db");
 
-    std::fs::create_dir_all(db_path.parent().expect("Invalid database path"))
-        .expect("Unable to create directories for db");
+    let db_parent = match db_path.parent() {
+        Some(p) => p,
+        None => {
+            tracing::error!("Failed to get parent of db path");
+            panic!();
+        }
+    };
+    if let Err(err) = std::fs::create_dir_all(db_parent) {
+        tracing::error!("Failed to create directories for db path: {}", err);
+        panic!();
+    }
 
-    let conn = Connection::open(db_path).unwrap_or_else(|err| {
-        panic!("Unable to open database connection: {}", err);
-    });
+    let conn = match Connection::open(db_path) {
+        Ok(c) => c,
+        Err(err) => {
+            tracing::error!("Failed to open database connection: {}", err);
+            panic!()
+        }
+    };
 
     let migrations = vec![
         CREATE_PRODUCTS_TABLE_QUERY_1,
@@ -40,9 +58,10 @@ pub fn prepare_conn() -> Connection {
         CREATE_MEAL_PRODUCTS_TABLE_QUERY_3,
         CREATE_CALORIE_TARGETS_TABLE_QUERY_4,
     ];
-    migrate(&conn, migrations).unwrap_or_else(|err| {
-        panic!("Failed to perform database migrations: {}", err);
-    });
+    if let Err(err) = migrate(&conn, migrations) {
+        tracing::error!("Failed to perform database migration: {}", err);
+        panic!()
+    }
 
     conn
 }

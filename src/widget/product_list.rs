@@ -40,7 +40,7 @@ impl ProductList {
     }
 
     fn refresh(&mut self, ctx: &Context) {
-        self.products = ctx.data.product.list().unwrap();
+        self.products = ctx.data.product.list().unwrap_or_default();
         self.filter();
     }
 
@@ -101,7 +101,10 @@ impl Widget for ProductList {
                     self.filter();
                 }
                 ProductListMessage::DeleteProduct(product_id) => {
-                    ctx.data.product.delete(product_id).unwrap();
+                    if let Err(err) = ctx.data.product.delete(product_id) {
+                        tracing::error!("Failed to delete product: {}", err);
+                        panic!();
+                    }
                     self.refresh(ctx);
                 }
             }

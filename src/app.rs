@@ -76,24 +76,49 @@ impl App {
             self.active_widget = match w {
                 NextWidget::Dashboard => Box::new(Dashboard::new()),
                 NextWidget::ProductList => {
-                    let products = self.ctx.data.product.list().unwrap();
+                    let products = match self.ctx.data.product.list() {
+                        Ok(p) => p,
+                        Err(err) => {
+                            tracing::error!("Failed to get product list: {}", err);
+                            panic!()
+                        }
+                    };
                     Box::new(ProductList::new(products))
                 }
                 NextWidget::CreateProduct => Box::new(CreateProduct::new()),
                 NextWidget::UpdateProduct(id) => {
-                    let product = self.ctx.data.product.read(id).unwrap();
+                    let product = match self.ctx.data.product.read(id) {
+                        Ok(p) => p,
+                        Err(err) => {
+                            tracing::error!("Failed to get product by id: {}", err);
+                            panic!()
+                        }
+                    };
                     Box::new(UpdateProduct::new(product))
                 }
                 NextWidget::MealList => {
                     let day = Local::now().date_naive();
-                    let meals = self.ctx.data.meal.list_or_create_default(day).unwrap();
-                    let stats = self.ctx.data.meal.day_stats(day).unwrap();
-                    let target = self
-                        .ctx
-                        .data
-                        .calorie_target
-                        .read_last_or_create_default()
-                        .unwrap();
+                    let meals = match self.ctx.data.meal.list_or_create_default(day) {
+                        Ok(m) => m,
+                        Err(err) => {
+                            tracing::error!("Failed to get meals or create default: {}", err);
+                            panic!()
+                        }
+                    };
+                    let stats = match self.ctx.data.meal.day_stats(day) {
+                        Ok(s) => s,
+                        Err(err) => {
+                            tracing::error!("Failed to get meal stats: {}", err);
+                            panic!()
+                        }
+                    };
+                    let target = match self.ctx.data.calorie_target.read_last_or_create_default() {
+                        Ok(t) => t,
+                        Err(err) => {
+                            tracing::error!("Failed to get calorie target: {}", err);
+                            panic!()
+                        }
+                    };
                     Box::new(MealList::new(day, meals, stats, target))
                 }
                 NextWidget::CalorieTargetList => {
@@ -102,7 +127,13 @@ impl App {
                 }
                 NextWidget::CreateCalorieTarget => Box::new(CreateCalorieTarget::new()),
                 NextWidget::UpdateCalorieTarget(day) => {
-                    let target = self.ctx.data.calorie_target.read(day).unwrap();
+                    let target = match self.ctx.data.calorie_target.read(day) {
+                        Ok(t) => t,
+                        Err(err) => {
+                            tracing::error!("Failed toread calorie target: {}", err);
+                            panic!()
+                        }
+                    };
                     Box::new(UpdateCalorieTarget::new(target))
                 }
             };
