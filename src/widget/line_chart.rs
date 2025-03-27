@@ -4,7 +4,7 @@ use chrono::{Datelike, NaiveDate};
 use iced::{
     event::Status,
     mouse::{Cursor, Interaction},
-    widget::canvas::{self, path::Builder, Cache, Event, Geometry, Stroke},
+    widget::canvas::{self, path::Builder, Cache, Event, Frame, Geometry, Stroke},
     Point, Rectangle, Renderer, Theme,
 };
 
@@ -12,8 +12,13 @@ use crate::app::Message;
 
 #[derive(Debug)]
 pub struct LineChart {
-    data: Vec<(NaiveDate, f32)>,
     cache: Cache,
+    data: Vec<(NaiveDate, f32)>,
+    margin: f32,
+    grid_x_density: usize,
+    grid_y_density: usize,
+    grid_width: f32,
+    axis_line_width: f32,
 }
 
 #[allow(unused)]
@@ -23,14 +28,19 @@ impl LineChart {
         sorted_data.sort_by(|(date_a, _), (date_b, _)| date_a.cmp(date_b));
 
         LineChart {
-            data: sorted_data,
             cache: Cache::new(),
+            data: sorted_data,
+            margin: 40.0,
+            grid_x_density: 10,
+            grid_y_density: 20,
+            grid_width: 1.0,
+            axis_line_width: 2.0,
         }
     }
 
-    fn points(&self, frame_width: f32, frame_height: f32) -> Vec<Point> {
+    fn draw_data_points(&self, frame: &mut Frame, plot_area: Rectangle, stroke: Stroke<'_>) {
         if self.data.is_empty() {
-            return vec![];
+            return;
         }
 
         let mut min_val = self.data[0].1;
@@ -56,7 +66,7 @@ impl LineChart {
 
         if first_day < 0 {
             tracing::error!("First day in line chart is before year 1970");
-            panic!();
+            return;
         }
 
         let first_day = first_day as f32;
@@ -68,7 +78,8 @@ impl LineChart {
             amount_of_days = 1.0;
         }
 
-        self.data
+        let points = self
+            .data
             .iter()
             .enumerate()
             .map(|(i, &(date, val))| {
@@ -76,11 +87,77 @@ impl LineChart {
                 let days_since_first = day - first_day;
                 let val_from_min = val - min_val;
 
-                let x = 0.0 + (days_since_first / amount_of_days) * frame_width;
-                let y = frame_height - (val_from_min / val_diff) * frame_height;
+                let x = plot_area.x + (days_since_first / amount_of_days) * plot_area.width;
+                let y =
+                    plot_area.y + plot_area.height - (val_from_min / val_diff) * plot_area.height;
                 Point::new(x, y)
             })
-            .collect()
+            .collect::<Vec<Point>>();
+
+        let mut builder = Builder::new();
+        if let Some((first, rest)) = points.split_first() {
+            builder.move_to(*first);
+            for point in rest {
+                builder.line_to(*point);
+            }
+        }
+
+        let path = builder.build();
+        frame.stroke(&path, stroke.with_width(4.0));
+    }
+
+    fn draw_x_axis(&self, frame: &mut Frame, plot_area: Rectangle, stroke: Stroke<'_>) {
+        let mut builder = Builder::new();
+
+        builder.move_to(Point::new(plot_area.x, plot_area.y));
+        builder.line_to(Point::new(plot_area.x, plot_area.y + plot_area.height));
+
+        let path = builder.build();
+        frame.stroke(&path, stroke.with_width(self.axis_line_width));
+    }
+
+    fn draw_y_axis(&self, frame: &mut Frame, plot_area: Rectangle, stroke: Stroke<'_>) {
+        let mut builder = Builder::new();
+
+        builder.move_to(Point::new(plot_area.x, plot_area.y + plot_area.height));
+        builder.line_to(Point::new(
+            plot_area.x + plot_area.width,
+            plot_area.y + plot_area.height,
+        ));
+
+        let path = builder.build();
+        frame.stroke(&path, stroke.with_width(self.axis_line_width));
+    }
+
+    fn draw_grid(&self, frame: &mut Frame, plot_area: Rectangle, stroke: Stroke<'_>) {
+        let mut builder = Builder::new();
+
+        builder.move_to(Point::new(plot_area.x + plot_area.width, plot_area.y));
+        builder.line_to(Point::new(
+            plot_area.x + plot_area.width,
+            plot_area.y + plot_area.height,
+        ));
+
+        let y_spacing = plot_area.height / self.grid_y_density as f32;
+        for y_count in 0..self.grid_y_density {
+            let x_start = plot_area.x;
+            let x_end = plot_area.x + plot_area.width;
+            let y = plot_area.y + y_count as f32 * y_spacing;
+            builder.move_to(Point::new(x_start, y));
+            builder.line_to(Point::new(x_end, y));
+        }
+
+        let x_spacing = plot_area.width / self.grid_x_density as f32;
+        for x_count in 0..self.grid_x_density {
+            let y_start = plot_area.y;
+            let y_end = plot_area.y + plot_area.height;
+            let x = plot_area.x + x_count as f32 * x_spacing;
+            builder.move_to(Point::new(x, y_start));
+            builder.line_to(Point::new(x, y_end));
+        }
+
+        let path = builder.build();
+        frame.stroke(&path, stroke.with_width(self.grid_width));
     }
 }
 
@@ -109,28 +186,22 @@ impl canvas::Program<Message> for LineChart {
             return vec![];
         }
 
-        let text_color = theme.extended_palette().primary.base.color;
-        let graph_fill = canvas::Fill {
-            style: canvas::Style::Solid(text_color),
-            ..Default::default()
+        let plot_area = Rectangle {
+            x: self.margin,
+            y: self.margin,
+            width: bounds.width - 2.0 * self.margin,
+            height: bounds.height - 2.0 * self.margin,
         };
-        let stroke = Stroke::default().with_width(4.0);
+
+        let text_color = theme.extended_palette().primary.base.color;
+        let data_line_stroke = Stroke::default().with_color(text_color);
+        let grid_stroke = Stroke::default();
 
         let graph = self.cache.draw(renderer, bounds.size(), |frame| {
-            let width = frame.width();
-            let height = frame.height();
-
-            let mut builder = Builder::new();
-            let points = self.points(width, height);
-            if let Some((first, rest)) = points.split_first() {
-                builder.move_to(*first);
-                for point in rest {
-                    builder.line_to(*point);
-                }
-            }
-
-            let path = builder.build();
-            frame.stroke(&path, stroke);
+            self.draw_grid(frame, plot_area, grid_stroke);
+            self.draw_x_axis(frame, plot_area, grid_stroke);
+            self.draw_y_axis(frame, plot_area, grid_stroke);
+            self.draw_data_points(frame, plot_area, data_line_stroke);
         });
         vec![graph]
     }
