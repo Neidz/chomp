@@ -8,7 +8,7 @@ use crate::{
     data::Product,
 };
 
-use super::{form_field::InputFormField, sidebar::sidebar, style::TableRowStyle, Widget};
+use super::{sidebar::sidebar, style::TableRowStyle, InputFormField, Widget};
 
 #[derive(Debug, Clone)]
 pub enum ProductListMessage {

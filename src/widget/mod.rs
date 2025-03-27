@@ -20,6 +20,8 @@ pub use calorie_target_list::*;
 pub use create_calorie_target::*;
 pub use create_product::*;
 pub use dashboard::*;
+use form_field::*;
+use line_chart::*;
 pub use meal_list::*;
 pub use product_list::*;
 pub use update_calorie_target::*;

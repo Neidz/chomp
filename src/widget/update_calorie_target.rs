@@ -9,11 +9,7 @@ use crate::{
     data::CalorieTarget,
 };
 
-use super::{
-    form_field::{InputFormField, InputFormFieldError},
-    sidebar::sidebar,
-    Widget,
-};
+use super::{sidebar::sidebar, InputFormField, InputFormFieldError, Widget};
 
 #[derive(Debug, Clone)]
 pub enum UpdateCalorieTargetMessage {

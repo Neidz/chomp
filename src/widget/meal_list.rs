@@ -18,10 +18,7 @@ use crate::{
 };
 
 use super::{
-    form_field::{InputFormField, InputFormFieldError},
-    modal::modal,
-    sidebar::sidebar,
-    style::TableRowStyle,
+    modal::modal, sidebar::sidebar, style::TableRowStyle, InputFormField, InputFormFieldError,
     Widget,
 };
 

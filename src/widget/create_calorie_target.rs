@@ -9,11 +9,7 @@ use crate::{
     data::{CalorieTarget, DataError},
 };
 
-use super::{
-    form_field::{DayFormField, InputFormField, InputFormFieldError},
-    sidebar::sidebar,
-    Widget,
-};
+use super::{sidebar::sidebar, DayFormField, InputFormField, InputFormFieldError, Widget};
 
 #[derive(Debug, Clone)]
 pub enum CreateCalorieTargetMessage {
