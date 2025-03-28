@@ -30,9 +30,9 @@ impl Dashboard {
             (NaiveDate::from_ymd_opt(2025, 1, 5).unwrap(), 81.9),
             (NaiveDate::from_ymd_opt(2025, 1, 10).unwrap(), 81.4),
             (NaiveDate::from_ymd_opt(2025, 1, 15).unwrap(), 80.8),
-            (NaiveDate::from_ymd_opt(2025, 1, 20).unwrap(), 80.3),
-            (NaiveDate::from_ymd_opt(2025, 1, 25).unwrap(), 79.7),
-            (NaiveDate::from_ymd_opt(2025, 1, 30).unwrap(), 79.2),
+            (NaiveDate::from_ymd_opt(2025, 2, 20).unwrap(), 80.3),
+            (NaiveDate::from_ymd_opt(2025, 4, 25).unwrap(), 100.7),
+            (NaiveDate::from_ymd_opt(2025, 6, 30).unwrap(), 79.2),
         ];
 
         Dashboard {
