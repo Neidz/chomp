@@ -36,7 +36,6 @@ pub struct CalorieTargetData {
     db: Rc<RefCell<Connection>>,
 }
 
-#[allow(unused)]
 impl CalorieTargetData {
     pub fn new(db: Rc<RefCell<Connection>>) -> Self {
         CalorieTargetData { db }

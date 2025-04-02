@@ -4,6 +4,7 @@ use migrate::migrate;
 use migrations::{
     CREATE_CALORIE_TARGETS_TABLE_QUERY_4, CREATE_MEALS_TABLE_QUERY_2,
     CREATE_MEAL_PRODUCTS_TABLE_QUERY_3, CREATE_PRODUCTS_TABLE_QUERY_1,
+    CREATE_WEIGHTRS_TABLE_QUERY_5,
 };
 use rusqlite::Connection;
 
@@ -57,6 +58,7 @@ pub fn prepare_conn() -> Connection {
         CREATE_MEALS_TABLE_QUERY_2,
         CREATE_MEAL_PRODUCTS_TABLE_QUERY_3,
         CREATE_CALORIE_TARGETS_TABLE_QUERY_4,
+        CREATE_WEIGHTRS_TABLE_QUERY_5,
     ];
     if let Err(err) = migrate(&conn, migrations) {
         tracing::error!("Failed to perform database migration: {}", err);

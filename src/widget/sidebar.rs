@@ -13,6 +13,7 @@ pub fn sidebar() -> Element<'static, Message> {
             "Product List",
             Message::ChangeWidget(NextWidget::ProductList),
         ),
+        ("Weight List", Message::ChangeWidget(NextWidget::WeightList)),
         (
             "Calorie Target List",
             Message::ChangeWidget(NextWidget::CalorieTargetList),

@@ -9,9 +9,10 @@ use crate::{
     data::Data,
     widget::{
         CalorieTargetList, CalorieTargetListMessage, CreateCalorieTarget,
-        CreateCalorieTargetMessage, CreateProduct, CreateProductMessage, Dashboard,
-        DashboardMessage, MealList, MealListMessage, ProductList, ProductListMessage,
-        UpdateCalorieTarget, UpdateCalorieTargetMessage, UpdateProduct, UpdateProductMessage,
+        CreateCalorieTargetMessage, CreateProduct, CreateProductMessage, CreateWeight,
+        CreateWeightMessage, Dashboard, DashboardMessage, MealList, MealListMessage, ProductList,
+        ProductListMessage, UpdateCalorieTarget, UpdateCalorieTargetMessage, UpdateProduct,
+        UpdateProductMessage, UpdateWeight, UpdateWeightMessage, WeightList, WeightListMessage,
         Widget,
     },
 };
@@ -22,6 +23,9 @@ pub enum NextWidget {
     ProductList,
     CreateProduct,
     UpdateProduct(usize),
+    WeightList,
+    CreateWeight,
+    UpdateWeight(NaiveDate),
     MealList,
     CalorieTargetList,
     CreateCalorieTarget,
@@ -38,6 +42,9 @@ pub enum Message {
     ProductList(ProductListMessage),
     CreateProduct(CreateProductMessage),
     UpdateProduct(UpdateProductMessage),
+    WeightList(WeightListMessage),
+    CreateWeight(CreateWeightMessage),
+    UpdateWeight(UpdateWeightMessage),
     MealList(MealListMessage),
     CalorieTargetList(CalorieTargetListMessage),
     CreateCalorieTarget(CreateCalorieTargetMessage),
@@ -102,6 +109,21 @@ impl App {
                     };
                     Box::new(UpdateProduct::new(product))
                 }
+                NextWidget::WeightList => {
+                    let weights = self.ctx.data.weight.list().unwrap_or_default();
+                    Box::new(WeightList::new(weights))
+                }
+                NextWidget::CreateWeight => Box::new(CreateWeight::new()),
+                NextWidget::UpdateWeight(day) => {
+                    let weight = match self.ctx.data.weight.read(day) {
+                        Ok(w) => w,
+                        Err(err) => {
+                            tracing::error!("Failed to read weight: {}", err);
+                            panic!()
+                        }
+                    };
+                    Box::new(UpdateWeight::new(weight))
+                }
                 NextWidget::MealList => {
                     let day = Local::now().date_naive();
                     let meals = match self.ctx.data.meal.list_or_create_default(day) {
@@ -136,7 +158,7 @@ impl App {
                     let target = match self.ctx.data.calorie_target.read(day) {
                         Ok(t) => t,
                         Err(err) => {
-                            tracing::error!("Failed toread calorie target: {}", err);
+                            tracing::error!("Failed to read calorie target: {}", err);
                             panic!()
                         }
                     };
