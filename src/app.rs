@@ -11,9 +11,9 @@ use crate::{
         CalorieTargetList, CalorieTargetListMessage, CreateCalorieTarget,
         CreateCalorieTargetMessage, CreateProduct, CreateProductMessage, CreateWeight,
         CreateWeightMessage, Dashboard, DashboardMessage, MealList, MealListMessage, ProductList,
-        ProductListMessage, UpdateCalorieTarget, UpdateCalorieTargetMessage, UpdateProduct,
-        UpdateProductMessage, UpdateWeight, UpdateWeightMessage, WeightList, WeightListMessage,
-        Widget,
+        ProductListMessage, Tools, ToolsMessage, UpdateCalorieTarget, UpdateCalorieTargetMessage,
+        UpdateProduct, UpdateProductMessage, UpdateWeight, UpdateWeightMessage, WeightList,
+        WeightListMessage, Widget,
     },
 };
 
@@ -30,6 +30,7 @@ pub enum NextWidget {
     CalorieTargetList,
     CreateCalorieTarget,
     UpdateCalorieTarget(NaiveDate),
+    Tools,
 }
 
 #[derive(Debug, Clone)]
@@ -49,6 +50,7 @@ pub enum Message {
     CalorieTargetList(CalorieTargetListMessage),
     CreateCalorieTarget(CreateCalorieTargetMessage),
     UpdateCalorieTarget(UpdateCalorieTargetMessage),
+    Tools(ToolsMessage),
 }
 
 pub struct Context {
@@ -164,6 +166,7 @@ impl App {
                     };
                     Box::new(UpdateCalorieTarget::new(target))
                 }
+                NextWidget::Tools => Box::new(Tools::new()),
             };
         }
 

@@ -5,10 +5,16 @@ use rusqlite::{params, Connection};
 
 use super::DataError;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Weight {
     pub day: NaiveDate,
     pub weight: f64,
+}
+
+impl Weight {
+    pub fn new(day: NaiveDate, weight: f64) -> Self {
+        Weight { day, weight }
+    }
 }
 
 pub struct WeightData {
