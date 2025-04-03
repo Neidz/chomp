@@ -351,10 +351,10 @@ fn render_meal(meal: &Meal) -> Element<Message> {
         list_header_row()
     ];
 
-    let mut calories_sum = 0f64;
-    let mut fats_sum = 0f64;
-    let mut proteins_sum = 0f64;
-    let mut carbohydrates_sum = 0f64;
+    let mut calories_sum = 0f32;
+    let mut fats_sum = 0f32;
+    let mut proteins_sum = 0f32;
+    let mut carbohydrates_sum = 0f32;
 
     for (i, meal_product) in meal.products.iter().enumerate() {
         calories_sum += meal_product.calories;
@@ -425,10 +425,10 @@ fn list_row(mp: &MealProduct, even: bool) -> Element<Message> {
 }
 
 fn list_footer(
-    calories_sum: f64,
-    fats_sum: f64,
-    proteins_sum: f64,
-    carbohydrates_sum: f64,
+    calories_sum: f32,
+    fats_sum: f32,
+    proteins_sum: f32,
+    carbohydrates_sum: f32,
 ) -> Element<'static, Message> {
     let row = row![
         Text::new("Sum").width(Length::Fill),
@@ -450,14 +450,10 @@ fn list_footer(
 
 pub fn meal_stats(stats: &MealDayStats, target: &CalorieTarget) -> Element<'static, Message> {
     row![
-        meal_stat("Calories", stats.calories, target.calories as f32),
-        meal_stat("Proteins", stats.proteins, target.proteins as f32),
-        meal_stat("Fats", stats.fats, target.fats as f32),
-        meal_stat(
-            "Carbohydrates",
-            stats.carbohydrates,
-            target.carbohydrates as f32
-        )
+        meal_stat("Calories", stats.calories, target.calories),
+        meal_stat("Proteins", stats.proteins, target.proteins),
+        meal_stat("Fats", stats.fats, target.fats),
+        meal_stat("Carbohydrates", stats.carbohydrates, target.carbohydrates)
     ]
     .spacing(40)
     .width(Length::Fill)
@@ -478,7 +474,7 @@ fn meal_stat(label: &str, value: f32, max_value: f32) -> Element<Message> {
 pub struct MealProductForm {
     pub combo_box_state: combo_box::State<Product>,
     pub combo_box_error: Option<InputFormFieldError>,
-    pub weight: InputFormField<f64>,
+    pub weight: InputFormField<f32>,
     pub meal: Meal,
     pub product_id: Option<usize>,
 }
@@ -510,7 +506,7 @@ impl MealProductForm {
             if input.is_empty() {
                 Err(InputFormFieldError::MissingRequiredValue)
             } else {
-                match input.parse::<f64>() {
+                match input.parse::<f32>() {
                     Err(_) => Err(InputFormFieldError::InvalidNumber),
                     Ok(val) if val < 0.0 => Err(InputFormFieldError::SmallerThanZero),
                     Ok(val) => Ok(val),
@@ -568,7 +564,7 @@ pub fn render_add_product_to_meal_form(form: &MealProductForm) -> Element<Messag
 #[derive(Debug)]
 pub struct UpdateMealProductForm {
     pub meal_product: MealProduct,
-    pub weight: InputFormField<f64>,
+    pub weight: InputFormField<f32>,
 }
 
 impl UpdateMealProductForm {
@@ -588,7 +584,7 @@ impl UpdateMealProductForm {
             if input.is_empty() {
                 Err(InputFormFieldError::MissingRequiredValue)
             } else {
-                match input.parse::<f64>() {
+                match input.parse::<f32>() {
                     Err(_) => Err(InputFormFieldError::InvalidNumber),
                     Ok(val) if val < 0.0 => Err(InputFormFieldError::SmallerThanZero),
                     Ok(val) => Ok(val),

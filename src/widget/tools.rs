@@ -24,7 +24,7 @@ struct FitnotesRecord {
     #[serde(rename = "Measurement")]
     measurement: String,
     #[serde(rename = "Value")]
-    value: f64,
+    value: f32,
 }
 
 #[derive(Debug, Clone)]

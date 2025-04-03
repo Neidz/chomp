@@ -31,10 +31,10 @@ impl From<CreateProductMessage> for Message {
 pub struct CreateProduct {
     name: InputFormField<String>,
     company: InputFormField<Option<String>>,
-    calories: InputFormField<f64>,
-    fats: InputFormField<f64>,
-    proteins: InputFormField<f64>,
-    carbohydrates: InputFormField<f64>,
+    calories: InputFormField<f32>,
+    fats: InputFormField<f32>,
+    proteins: InputFormField<f32>,
+    carbohydrates: InputFormField<f32>,
 }
 
 impl CreateProduct {
@@ -72,7 +72,7 @@ impl CreateProduct {
             if input.is_empty() {
                 Err(InputFormFieldError::MissingRequiredValue)
             } else {
-                match input.parse::<f64>() {
+                match input.parse::<f32>() {
                     Err(_) => Err(InputFormFieldError::InvalidNumber),
                     Ok(val) if val < 0.0 => Err(InputFormFieldError::SmallerThanZero),
                     Ok(val) => Ok(val),
@@ -84,7 +84,7 @@ impl CreateProduct {
             if input.is_empty() {
                 Err(InputFormFieldError::MissingRequiredValue)
             } else {
-                match input.parse::<f64>() {
+                match input.parse::<f32>() {
                     Err(_) => Err(InputFormFieldError::InvalidNumber),
                     Ok(val) if val < 0.0 => Err(InputFormFieldError::SmallerThanZero),
                     Ok(val) => Ok(val),
@@ -96,7 +96,7 @@ impl CreateProduct {
             if input.is_empty() {
                 Err(InputFormFieldError::MissingRequiredValue)
             } else {
-                match input.parse::<f64>() {
+                match input.parse::<f32>() {
                     Err(_) => Err(InputFormFieldError::InvalidNumber),
                     Ok(val) if val < 0.0 => Err(InputFormFieldError::SmallerThanZero),
                     Ok(val) => Ok(val),
@@ -108,7 +108,7 @@ impl CreateProduct {
             if input.is_empty() {
                 Err(InputFormFieldError::MissingRequiredValue)
             } else {
-                match input.parse::<f64>() {
+                match input.parse::<f32>() {
                     Err(_) => Err(InputFormFieldError::InvalidNumber),
                     Ok(val) if val < 0.0 => Err(InputFormFieldError::SmallerThanZero),
                     Ok(val) => Ok(val),

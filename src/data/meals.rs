@@ -12,13 +12,13 @@ const DEFAULT_MEALS: [&str; 4] = ["Breakfast", "Snack", "Lunch", "Dinner"];
 pub struct MealProduct {
     pub id: usize,
     pub product_id: usize,
-    pub weight: f64,
+    pub weight: f32,
     pub name: String,
     pub company: Option<String>,
-    pub calories: f64,
-    pub fats: f64,
-    pub proteins: f64,
-    pub carbohydrates: f64,
+    pub calories: f32,
+    pub fats: f32,
+    pub proteins: f32,
+    pub carbohydrates: f32,
 }
 
 impl PartialEq<MealProduct> for Product {
@@ -61,13 +61,13 @@ impl Eq for Meal {}
 pub struct AddMealProduct {
     pub meal_id: usize,
     pub product_id: usize,
-    pub weight: f64,
+    pub weight: f32,
 }
 
 #[derive(Debug)]
 pub struct UpdateMealProductWeight {
     pub meal_product_id: usize,
-    pub weight: f64,
+    pub weight: f32,
 }
 
 #[derive(Debug)]

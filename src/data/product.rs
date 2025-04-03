@@ -10,10 +10,10 @@ pub struct Product {
     pub id: usize,
     pub name: String,
     pub company: Option<String>,
-    pub calories: f64,
-    pub fats: f64,
-    pub proteins: f64,
-    pub carbohydrates: f64,
+    pub calories: f32,
+    pub fats: f32,
+    pub proteins: f32,
+    pub carbohydrates: f32,
 }
 
 impl fmt::Display for Product {
@@ -26,10 +26,10 @@ impl fmt::Display for Product {
 pub struct CreateUpdateProduct {
     pub name: String,
     pub company: Option<String>,
-    pub calories: f64,
-    pub fats: f64,
-    pub proteins: f64,
-    pub carbohydrates: f64,
+    pub calories: f32,
+    pub fats: f32,
+    pub proteins: f32,
+    pub carbohydrates: f32,
 }
 
 pub struct ProductData {

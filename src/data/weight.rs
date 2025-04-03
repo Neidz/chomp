@@ -8,11 +8,11 @@ use super::DataError;
 #[derive(Debug, Clone)]
 pub struct Weight {
     pub day: NaiveDate,
-    pub weight: f64,
+    pub weight: f32,
 }
 
 impl Weight {
-    pub fn new(day: NaiveDate, weight: f64) -> Self {
+    pub fn new(day: NaiveDate, weight: f32) -> Self {
         Weight { day, weight }
     }
 }

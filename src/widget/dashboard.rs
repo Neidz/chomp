@@ -27,10 +27,7 @@ pub struct Dashboard {
 
 impl Dashboard {
     pub fn new(weights: Vec<Weight>) -> Self {
-        let weights: Vec<LineChartEntry> = weights
-            .into_iter()
-            .map(|w| (w.day, w.weight as f32))
-            .collect();
+        let weights: Vec<LineChartEntry> = weights.into_iter().map(|w| (w.day, w.weight)).collect();
 
         Dashboard {
             chart: LineChart::new(weights),

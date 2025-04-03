@@ -8,19 +8,19 @@ use super::DataError;
 #[derive(Debug, Clone)]
 pub struct CalorieTarget {
     pub day: NaiveDate,
-    pub calories: f64,
-    pub fats: f64,
-    pub proteins: f64,
-    pub carbohydrates: f64,
+    pub calories: f32,
+    pub fats: f32,
+    pub proteins: f32,
+    pub carbohydrates: f32,
 }
 
 impl CalorieTarget {
     pub fn new(
         day: NaiveDate,
-        calories: f64,
-        fats: f64,
-        proteins: f64,
-        carbohydrates: f64,
+        calories: f32,
+        fats: f32,
+        proteins: f32,
+        carbohydrates: f32,
     ) -> Self {
         CalorieTarget {
             day,

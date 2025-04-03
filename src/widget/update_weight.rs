@@ -26,7 +26,7 @@ impl From<UpdateWeightMessage> for Message {
 #[derive(Debug)]
 pub struct UpdateWeight {
     day: NaiveDate,
-    weight: InputFormField<f64>,
+    weight: InputFormField<f32>,
 }
 
 impl UpdateWeight {
@@ -46,7 +46,7 @@ impl UpdateWeight {
             if input.is_empty() {
                 Err(InputFormFieldError::MissingRequiredValue)
             } else {
-                match input.parse::<f64>() {
+                match input.parse::<f32>() {
                     Err(_) => Err(InputFormFieldError::InvalidNumber),
                     Ok(val) if val < 0.0 => Err(InputFormFieldError::SmallerThanZero),
                     Ok(val) => Ok(val),
