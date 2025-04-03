@@ -19,6 +19,18 @@ fn get_home_dir() -> Option<PathBuf> {
     }
 }
 
+pub fn run_migrations(conn: &Connection) -> Result<(), String> {
+    let migrations = vec![
+        CREATE_PRODUCTS_TABLE_QUERY_1,
+        CREATE_MEALS_TABLE_QUERY_2,
+        CREATE_MEAL_PRODUCTS_TABLE_QUERY_3,
+        CREATE_CALORIE_TARGETS_TABLE_QUERY_4,
+        CREATE_WEIGHTRS_TABLE_QUERY_5,
+    ];
+
+    migrate(conn, migrations)
+}
+
 pub fn prepare_conn() -> Connection {
     let home = match get_home_dir() {
         Some(d) => d,
@@ -53,17 +65,21 @@ pub fn prepare_conn() -> Connection {
         }
     };
 
-    let migrations = vec![
-        CREATE_PRODUCTS_TABLE_QUERY_1,
-        CREATE_MEALS_TABLE_QUERY_2,
-        CREATE_MEAL_PRODUCTS_TABLE_QUERY_3,
-        CREATE_CALORIE_TARGETS_TABLE_QUERY_4,
-        CREATE_WEIGHTRS_TABLE_QUERY_5,
-    ];
-    if let Err(err) = migrate(&conn, migrations) {
+    if let Err(err) = run_migrations(&conn) {
         tracing::error!("Failed to perform database migration: {}", err);
         panic!()
     }
 
     conn
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn can_perform_all_migrations() {
+        let conn = Connection::open_in_memory().unwrap();
+        run_migrations(&conn).unwrap();
+    }
 }
