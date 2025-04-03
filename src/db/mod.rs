@@ -78,8 +78,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn can_perform_all_migrations() {
+    fn can_perform_all_migrations_multiple_times() {
         let conn = Connection::open_in_memory().unwrap();
+        run_migrations(&conn).unwrap();
         run_migrations(&conn).unwrap();
     }
 }
