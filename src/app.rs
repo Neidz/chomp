@@ -1,4 +1,4 @@
-use chrono::{Local, NaiveDate};
+use chrono::{Local, Months, NaiveDate};
 use iced::{
     keyboard::{self, Modifiers},
     widget, Element, Subscription, Task,
@@ -67,12 +67,22 @@ impl App {
     pub fn new(db: Connection) -> Self {
         let data = Data::new(db);
 
+        let weights_end = Local::now().date_naive();
+        let weights_start = Local::now()
+            .checked_sub_months(Months::new(1))
+            .unwrap()
+            .date_naive();
+        let weights = data
+            .weight
+            .list_between(weights_start, weights_end)
+            .unwrap_or_default();
+
         App {
             ctx: Context {
                 data,
                 next_widget: None,
             },
-            active_widget: Box::new(Dashboard::new()),
+            active_widget: Box::new(Dashboard::new(weights)),
         }
     }
 
@@ -89,7 +99,20 @@ impl App {
 
         if let Some(w) = self.ctx.next_widget.take() {
             self.active_widget = match w {
-                NextWidget::Dashboard => Box::new(Dashboard::new()),
+                NextWidget::Dashboard => {
+                    let end = Local::now().date_naive();
+                    let start = Local::now()
+                        .checked_sub_months(Months::new(1))
+                        .unwrap()
+                        .date_naive();
+                    let weights = self
+                        .ctx
+                        .data
+                        .weight
+                        .list_between(start, end)
+                        .unwrap_or_default();
+                    Box::new(Dashboard::new(weights))
+                }
                 NextWidget::ProductList => {
                     let products = match self.ctx.data.product.list() {
                         Ok(p) => p,

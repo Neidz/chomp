@@ -1,13 +1,15 @@
-use chrono::NaiveDate;
 use iced::{
     widget::{column, row, Canvas, Text},
     Element,
     Length::{self},
 };
 
-use crate::app::{Context, Message};
+use crate::{
+    app::{Context, Message},
+    data::Weight,
+};
 
-use super::{sidebar::sidebar, LineChart, Widget};
+use super::{line_chart::LineChartEntry, sidebar::sidebar, LineChart, Widget};
 
 #[derive(Debug, Clone)]
 pub enum DashboardMessage {}
@@ -24,19 +26,14 @@ pub struct Dashboard {
 }
 
 impl Dashboard {
-    pub fn new() -> Self {
-        let test_data: Vec<(NaiveDate, f32)> = vec![
-            (NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(), 82.5),
-            (NaiveDate::from_ymd_opt(2025, 1, 5).unwrap(), 81.9),
-            (NaiveDate::from_ymd_opt(2025, 1, 10).unwrap(), 81.4),
-            (NaiveDate::from_ymd_opt(2025, 1, 15).unwrap(), 80.8),
-            (NaiveDate::from_ymd_opt(2025, 2, 20).unwrap(), 80.3),
-            (NaiveDate::from_ymd_opt(2025, 4, 25).unwrap(), 100.7),
-            (NaiveDate::from_ymd_opt(2025, 6, 30).unwrap(), 79.2),
-        ];
+    pub fn new(weights: Vec<Weight>) -> Self {
+        let weights: Vec<LineChartEntry> = weights
+            .into_iter()
+            .map(|w| (w.day, w.weight as f32))
+            .collect();
 
         Dashboard {
-            chart: LineChart::new(test_data),
+            chart: LineChart::new(weights),
         }
     }
 }

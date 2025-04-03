@@ -106,4 +106,31 @@ impl WeightData {
 
         Ok(weights)
     }
+
+    pub fn list_between(&self, start: NaiveDate, end: NaiveDate) -> Result<Vec<Weight>, DataError> {
+        let query = "
+            SELECT day, weight
+            FROM weights
+            WHERE day between ?1 AND ?2
+            ORDER BY day DESC";
+        let args = params![
+            format!("{}", start.format("%Y-%m-%d")),
+            format!("{}", end.format("%Y-%m-%d"))
+        ];
+
+        let db = self.db.borrow();
+        let mut stmt = db.prepare(query)?;
+
+        let weights = stmt
+            .query_map(args, |row| {
+                Ok(Weight {
+                    day: row.get(0)?,
+                    weight: row.get(1)?,
+                })
+            })
+            .map_err(DataError::from)?
+            .collect::<Result<Vec<Weight>, _>>()?;
+
+        Ok(weights)
+    }
 }

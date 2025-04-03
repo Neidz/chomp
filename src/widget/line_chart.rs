@@ -10,10 +10,12 @@ use iced::{
 
 use crate::app::Message;
 
+pub type LineChartEntry = (NaiveDate, f32);
+
 #[derive(Debug)]
 pub struct LineChart {
     cache: Cache,
-    data: Vec<(NaiveDate, f32)>,
+    data: Vec<LineChartEntry>,
     margin: f32,
     grid_x_density: usize,
     grid_y_density: usize,
@@ -25,7 +27,7 @@ pub struct LineChart {
 
 #[allow(unused)]
 impl LineChart {
-    pub fn new(data: Vec<(NaiveDate, f32)>) -> Self {
+    pub fn new(data: Vec<LineChartEntry>) -> Self {
         let mut sorted_data = data;
         sorted_data.sort_by(|(date_a, _), (date_b, _)| date_a.cmp(date_b));
 
