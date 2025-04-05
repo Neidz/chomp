@@ -19,7 +19,7 @@ fn get_home_dir() -> Option<PathBuf> {
     }
 }
 
-pub fn run_migrations(conn: &Connection) -> Result<(), String> {
+fn run_migrations(conn: &Connection) -> Result<(), String> {
     let migrations = vec![
         CREATE_PRODUCTS_TABLE_QUERY_1,
         CREATE_MEALS_TABLE_QUERY_2,

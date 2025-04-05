@@ -39,7 +39,7 @@ pub struct CreateCalorieTarget {
 impl CreateCalorieTarget {
     pub fn new() -> Self {
         CreateCalorieTarget {
-            day: DayFormField::new("Date"),
+            day: DayFormField::new("Date*"),
             calories: InputFormField::new("Calories* (kcal/day)", "2500.0"),
             fats: InputFormField::new("Fats* (g/day)", "80.0"),
             proteins: InputFormField::new("Proteins* (g/day)", "200.0"),

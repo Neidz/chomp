@@ -33,7 +33,7 @@ pub struct CreateWeight {
 impl CreateWeight {
     pub fn new() -> Self {
         CreateWeight {
-            day: DayFormField::new("Date"),
+            day: DayFormField::new("Date*"),
             weight: InputFormField::new("Weight* (g)", "80.1"),
         }
     }
