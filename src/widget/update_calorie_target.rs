@@ -1,7 +1,7 @@
 use chrono::NaiveDate;
 use iced::{
     widget::{column, row, Button, Text},
-    Element, Length,
+    Element, Length, Task,
 };
 
 use crate::{
@@ -153,7 +153,7 @@ impl Widget for UpdateCalorieTarget {
             .into()
     }
 
-    fn update(&mut self, ctx: &mut Context, msg: Message) {
+    fn update(&mut self, ctx: &mut Context, msg: Message) -> Task<Message> {
         if let Message::UpdateCalorieTarget(msg) = msg {
             match msg {
                 UpdateCalorieTargetMessage::UpdateCalories(raw_calories) => {
@@ -178,6 +178,8 @@ impl Widget for UpdateCalorieTarget {
                     };
                 }
             }
-        }
+        };
+
+        Task::none()
     }
 }

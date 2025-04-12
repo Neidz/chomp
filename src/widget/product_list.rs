@@ -1,6 +1,6 @@
 use iced::{
     widget::{column, row, Button, Container, Scrollable, Text},
-    Alignment, Element, Length,
+    Alignment, Element, Length, Task,
 };
 
 use crate::{
@@ -90,7 +90,7 @@ impl Widget for ProductList {
             .into()
     }
 
-    fn update(&mut self, ctx: &mut Context, msg: Message) {
+    fn update(&mut self, ctx: &mut Context, msg: Message) -> Task<Message> {
         if let Message::ProductList(msg) = msg {
             match msg {
                 ProductListMessage::RedirectToCreate => {
@@ -108,7 +108,9 @@ impl Widget for ProductList {
                     self.refresh(ctx);
                 }
             }
-        }
+        };
+
+        Task::none()
     }
 }
 

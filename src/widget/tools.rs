@@ -1,4 +1,7 @@
-use std::{fs::File, path::Path};
+use std::{
+    fs::File,
+    path::{Path, PathBuf},
+};
 
 use chrono::NaiveDate;
 use csv::Reader;
@@ -6,8 +9,9 @@ use iced::{
     widget::{column, row, Button, Text},
     Element,
     Length::{self},
+    Task,
 };
-use rfd::FileDialog;
+use rfd::AsyncFileDialog;
 use serde::Deserialize;
 
 use crate::{
@@ -29,7 +33,8 @@ struct FitnotesRecord {
 
 #[derive(Debug, Clone)]
 pub enum ToolsMessage {
-    LoadFitnotesWeightsData,
+    PickFitnotesWeightsDataFile,
+    LoadFitnotesWeightsData(Option<PathBuf>),
 }
 
 impl From<ToolsMessage> for Message {
@@ -52,7 +57,7 @@ impl Widget for Tools {
         let fitnotes = column![
             Text::new("Fitnotes"),
             Button::new("Load Bodyweights From CSV File")
-                .on_press(ToolsMessage::LoadFitnotesWeightsData.into())
+                .on_press(ToolsMessage::PickFitnotesWeightsDataFile.into())
         ]
         .spacing(2);
 
@@ -65,24 +70,36 @@ impl Widget for Tools {
             .into()
     }
 
-    fn update(&mut self, ctx: &mut Context, msg: Message) {
+    fn update(&mut self, ctx: &mut Context, msg: Message) -> Task<Message> {
         if let Message::Tools(msg) = msg {
             match msg {
-                ToolsMessage::LoadFitnotesWeightsData => {
-                    let file_path = FileDialog::new()
-                        .add_filter("CSV files", &["csv"])
-                        .pick_file();
-
+                ToolsMessage::PickFitnotesWeightsDataFile => {
+                    return Task::perform(pick_fitnotes_weights_data_file(), |file_path| {
+                        ToolsMessage::LoadFitnotesWeightsData(file_path).into()
+                    });
+                }
+                ToolsMessage::LoadFitnotesWeightsData(file_path) => {
                     if let Some(path) = file_path {
-                        import_fitnotes_weights(&path, ctx);
+                        import_fitnotes_weights_data(&path, ctx);
                     }
                 }
             }
-        }
+        };
+
+        Task::none()
     }
 }
 
-fn import_fitnotes_weights(path: &Path, ctx: &mut Context) {
+async fn pick_fitnotes_weights_data_file() -> Option<PathBuf> {
+    AsyncFileDialog::new()
+        .set_title("Select fitnotes weights data...")
+        .add_filter("CSV files", &["csv"])
+        .pick_file()
+        .await
+        .map(|handle| handle.path().to_path_buf())
+}
+
+fn import_fitnotes_weights_data(path: &Path, ctx: &mut Context) {
     let file = match File::open(path) {
         Ok(f) => f,
         Err(err) => {

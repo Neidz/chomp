@@ -1,6 +1,6 @@
 use iced::{
     widget::{column, row, Button, Text},
-    Element, Length,
+    Element, Length, Task,
 };
 
 use crate::{
@@ -177,7 +177,7 @@ impl Widget for UpdateProduct {
             .into()
     }
 
-    fn update(&mut self, ctx: &mut Context, msg: Message) {
+    fn update(&mut self, ctx: &mut Context, msg: Message) -> Task<Message> {
         if let Message::UpdateProduct(msg) = msg {
             match msg {
                 UpdateProductMessage::UpdateName(name) => {
@@ -219,6 +219,8 @@ impl Widget for UpdateProduct {
                     };
                 }
             }
-        }
+        };
+
+        Task::none()
     }
 }

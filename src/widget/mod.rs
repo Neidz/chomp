@@ -1,4 +1,4 @@
-use iced::Element;
+use iced::{Element, Task};
 
 use crate::app::{Context, Message};
 
@@ -37,5 +37,5 @@ pub use weight_list::*;
 
 pub trait Widget {
     fn view(&self) -> Element<Message>;
-    fn update(&mut self, ctx: &mut Context, msg: Message);
+    fn update(&mut self, ctx: &mut Context, msg: Message) -> Task<Message>;
 }

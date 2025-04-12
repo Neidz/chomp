@@ -6,7 +6,7 @@ use iced::{
         column, combo_box, container, horizontal_space, progress_bar, row, vertical_space, Button,
         Container, Scrollable, Text,
     },
-    Alignment, Element, Length,
+    Alignment, Element, Length, Task,
 };
 
 use crate::{
@@ -150,7 +150,7 @@ impl Widget for MealList {
         content_with_sidebar.into()
     }
 
-    fn update(&mut self, ctx: &mut Context, msg: Message) {
+    fn update(&mut self, ctx: &mut Context, msg: Message) -> Task<Message> {
         match msg {
             Message::MealList(msg) => match msg {
                 MealListMessage::NextDay => {
@@ -310,6 +310,8 @@ impl Widget for MealList {
             }
             _ => {}
         }
+
+        Task::none()
     }
 }
 

@@ -1,7 +1,7 @@
 use chrono::NaiveDate;
 use iced::{
     widget::{column, row, Button, Text},
-    Element, Length,
+    Element, Length, Task,
 };
 
 use crate::{
@@ -82,7 +82,7 @@ impl Widget for UpdateWeight {
             .into()
     }
 
-    fn update(&mut self, ctx: &mut Context, msg: Message) {
+    fn update(&mut self, ctx: &mut Context, msg: Message) -> Task<Message> {
         if let Message::UpdateWeight(msg) = msg {
             match msg {
                 UpdateWeightMessage::UpdateWeight(raw_weight) => {
@@ -98,6 +98,8 @@ impl Widget for UpdateWeight {
                     };
                 }
             }
-        }
+        };
+
+        Task::none()
     }
 }

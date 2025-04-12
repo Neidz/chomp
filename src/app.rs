@@ -91,7 +91,7 @@ impl App {
     }
 
     pub fn update(&mut self, msg: Message) -> Task<Message> {
-        self.active_widget.update(&mut self.ctx, msg.clone());
+        let widget_task = self.active_widget.update(&mut self.ctx, msg.clone());
 
         if let Message::ChangeWidget(w) = msg.clone() {
             self.ctx.next_widget = Some(w);
@@ -196,7 +196,7 @@ impl App {
         match msg {
             Message::TabClicked => widget::focus_next(),
             Message::ShiftTabClicked => widget::focus_previous(),
-            _ => Task::none(),
+            _ => widget_task,
         }
     }
 

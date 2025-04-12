@@ -2,6 +2,7 @@ use iced::{
     widget::{column, row, Canvas, Text},
     Element,
     Length::{self},
+    Task,
 };
 
 use crate::{
@@ -49,5 +50,7 @@ impl Widget for Dashboard {
             .into()
     }
 
-    fn update(&mut self, _ctx: &mut Context, _msg: Message) {}
+    fn update(&mut self, _ctx: &mut Context, _msg: Message) -> Task<Message> {
+        Task::none()
+    }
 }

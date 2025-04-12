@@ -1,7 +1,7 @@
 use chrono::NaiveDate;
 use iced::{
     widget::{column, row, Button, Container, Scrollable, Text},
-    Alignment, Element, Length,
+    Alignment, Element, Length, Task,
 };
 
 use crate::{
@@ -63,7 +63,7 @@ impl Widget for WeightList {
             .into()
     }
 
-    fn update(&mut self, ctx: &mut Context, msg: Message) {
+    fn update(&mut self, ctx: &mut Context, msg: Message) -> Task<Message> {
         if let Message::WeightList(msg) = msg {
             match msg {
                 WeightListMessage::RedirectToCreate => {
@@ -77,7 +77,9 @@ impl Widget for WeightList {
                     self.refresh(ctx);
                 }
             }
-        }
+        };
+
+        Task::none()
     }
 }
 
