@@ -41,9 +41,9 @@ impl CreateCalorieTarget {
         CreateCalorieTarget {
             day: DayFormField::new("Date*"),
             calories: InputFormField::new("Calories* (kcal/day)", "2500.0"),
-            fats: InputFormField::new("Fats* (g/day)", "80.0"),
-            proteins: InputFormField::new("Proteins* (g/day)", "200.0"),
-            carbohydrates: InputFormField::new("Carbohydrates* (g/day)", "245.0"),
+            fats: InputFormField::new_with_raw_value("Fats* (%)", "20.0", "20"),
+            proteins: InputFormField::new_with_raw_value("Proteins* (%)", "30.0", "30"),
+            carbohydrates: InputFormField::new_with_raw_value("Carbohydrates* (%)", "50.0", "50"),
         }
     }
 
@@ -60,6 +60,8 @@ impl CreateCalorieTarget {
             }
         });
 
+        let calories = self.calories.value.ok_or("validation failed")?;
+
         self.fats.validate(|input| {
             if input.is_empty() {
                 Err(InputFormFieldError::MissingRequiredValue)
@@ -67,6 +69,9 @@ impl CreateCalorieTarget {
                 match input.parse::<f32>() {
                     Err(_) => Err(InputFormFieldError::InvalidNumber),
                     Ok(val) if val < 0.0 => Err(InputFormFieldError::SmallerThanZero),
+                    Ok(val) if val > 100.0 => Err(InputFormFieldError::Custom(
+                        "Invalid number. Must be smaller or equal to 100.0".to_string(),
+                    )),
                     Ok(val) => Ok(val),
                 }
             }
@@ -79,6 +84,9 @@ impl CreateCalorieTarget {
                 match input.parse::<f32>() {
                     Err(_) => Err(InputFormFieldError::InvalidNumber),
                     Ok(val) if val < 0.0 => Err(InputFormFieldError::SmallerThanZero),
+                    Ok(val) if val > 100.0 => Err(InputFormFieldError::Custom(
+                        "Invalid number. Must be smaller or equal to 100.0".to_string(),
+                    )),
                     Ok(val) => Ok(val),
                 }
             }
@@ -91,17 +99,37 @@ impl CreateCalorieTarget {
                 match input.parse::<f32>() {
                     Err(_) => Err(InputFormFieldError::InvalidNumber),
                     Ok(val) if val < 0.0 => Err(InputFormFieldError::SmallerThanZero),
+                    Ok(val) if val > 100.0 => Err(InputFormFieldError::Custom(
+                        "Invalid number. Must be smaller or equal to 100.0".to_string(),
+                    )),
                     Ok(val) => Ok(val),
                 }
             }
         });
 
+        let fats_percentage = self.fats.value.ok_or("validation failed")?;
+        let proteins_percentage = self.proteins.value.ok_or("validation failed")?;
+        let carbohydrates_percentage = self.carbohydrates.value.ok_or("validation failed")?;
+
+        let sum = fats_percentage + proteins_percentage + carbohydrates_percentage;
+        if (sum - 100.0).abs() > 0.01 {
+            self.calories.error = Some(InputFormFieldError::Custom(format!(
+                "fats, proteins and carbohydrates must sum to 100.0%, current sum : {}%",
+                sum
+            )));
+            return Err("validation failed".to_string());
+        }
+
+        let fats = fats_percentage / 100.0 * calories / 9.0;
+        let proteins = proteins_percentage / 100.0 * calories / 4.0;
+        let carbohydrates = carbohydrates_percentage / 100.0 * calories / 4.0;
+
         Ok(CalorieTarget {
             day: self.day.value,
-            calories: self.calories.value.ok_or("validation failed")?,
-            fats: self.fats.value.ok_or("validation failed")?,
-            proteins: self.proteins.value.ok_or("validation failed")?,
-            carbohydrates: self.carbohydrates.value.ok_or("validation failed")?,
+            calories,
+            fats,
+            proteins,
+            carbohydrates,
         })
     }
 }
