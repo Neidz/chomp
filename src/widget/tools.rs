@@ -16,7 +16,7 @@ use serde::Deserialize;
 
 use crate::{
     app::{Context, Message},
-    data::{DataError, Weight},
+    data::{CreateUpdateProduct, DataError, Weight},
 };
 
 use super::{sidebar::sidebar, Widget};
@@ -35,6 +35,8 @@ struct FitnotesRecord {
 pub enum ToolsMessage {
     PickFitnotesWeightsDataFile,
     LoadFitnotesWeightsData(Option<PathBuf>),
+    PickProductsJSONDataFile,
+    LoadProductsJSONData(Option<PathBuf>),
 }
 
 impl From<ToolsMessage> for Message {
@@ -61,7 +63,14 @@ impl Widget for Tools {
         ]
         .spacing(2);
 
-        let content = column![Text::new("Tools").size(40), fitnotes].spacing(10);
+        let json_products = column![
+            Text::new("Products"),
+            Button::new("Load Products From JSON File")
+                .on_press(ToolsMessage::PickProductsJSONDataFile.into())
+        ]
+        .spacing(2);
+
+        let content = column![Text::new("Tools").size(40), fitnotes, json_products].spacing(10);
 
         row![sidebar(), content]
             .height(Length::Fill)
@@ -83,11 +92,80 @@ impl Widget for Tools {
                         import_fitnotes_weights_data(&path, ctx);
                     }
                 }
+                ToolsMessage::PickProductsJSONDataFile => {
+                    return Task::perform(pick_products_data_file(), |file_path| {
+                        ToolsMessage::LoadProductsJSONData(file_path).into()
+                    });
+                }
+                ToolsMessage::LoadProductsJSONData(file_path) => {
+                    if let Some(path) = file_path {
+                        import_products_data(&path, ctx);
+                    }
+                }
             }
         };
 
         Task::none()
     }
+}
+
+async fn pick_products_data_file() -> Option<PathBuf> {
+    AsyncFileDialog::new()
+        .set_title("Select file with products in JSON format...")
+        .add_filter("JSON files", &[".json"])
+        .pick_file()
+        .await
+        .map(|handle| handle.path().to_path_buf())
+}
+
+fn import_products_data(path: &Path, ctx: &mut Context) {
+    let file = match File::open(path) {
+        Ok(f) => f,
+        Err(err) => {
+            tracing::error!("Failed to open products JSON file: {}", err);
+            return;
+        }
+    };
+
+    let products: Result<Vec<CreateUpdateProduct>, _> = serde_json::from_reader(file);
+
+    let products = match products {
+        Ok(p) => p,
+        Err(err) => {
+            tracing::error!("Failed to parse JSON file: {}", err);
+            return;
+        }
+    };
+
+    let mut created = 0;
+    let mut skipped = 0;
+    let mut failed_to_create = 0;
+
+    for product in products {
+        match ctx.data.product.create(product) {
+            Ok(_) => {
+                created += 1;
+            }
+            Err(err) => match err {
+                DataError::UniqueConstraintViolation(unique_field)
+                    if unique_field == "products.name" =>
+                {
+                    skipped += 1;
+                }
+                _ => {
+                    failed_to_create += 1;
+                    tracing::error!("Failed to create weight: {}", err);
+                }
+            },
+        }
+    }
+
+    tracing::info!(
+        "Products: created {}, skipped (exists) {}, failed {}",
+        created,
+        skipped,
+        failed_to_create,
+    );
 }
 
 async fn pick_fitnotes_weights_data_file() -> Option<PathBuf> {
