@@ -192,7 +192,7 @@ impl Widget for CreateProduct {
                                     ))
                                 }
                                 _ => {
-                                    eprintln!("Error: {:?}", err);
+                                    eprintln!("Error: {err:?}");
                                 }
                             }
                         } else {

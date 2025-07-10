@@ -103,7 +103,7 @@ impl Widget for CreateWeight {
                                     ))
                                 }
                                 _ => {
-                                    eprintln!("Error: {:?}", err);
+                                    eprintln!("Error: {err:?}");
                                 }
                             }
                         } else {

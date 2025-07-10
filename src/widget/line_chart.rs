@@ -208,7 +208,7 @@ impl LineChart {
             let ratio = i as f32 / self.grid_y_density as f32;
             let val = min_val + ratio * val_diff;
 
-            let label = format!("{:.1}", val);
+            let label = format!("{val:.1}");
             let font_size = self.text_size;
             let letter_width = font_size / 2.0;
             let text_width = label.len() as f32 * letter_width;

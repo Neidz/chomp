@@ -114,8 +114,7 @@ impl CreateCalorieTarget {
         let sum = fats_percentage + proteins_percentage + carbohydrates_percentage;
         if (sum - 100.0).abs() > 0.01 {
             self.calories.error = Some(InputFormFieldError::Custom(format!(
-                "fats, proteins and carbohydrates must sum to 100.0%, current sum : {}%",
-                sum
+                "fats, proteins and carbohydrates must sum to 100.0%, current sum : {sum}%"
             )));
             return Err("validation failed".to_string());
         }
@@ -194,7 +193,7 @@ impl Widget for CreateCalorieTarget {
                                     ))
                                 }
                                 _ => {
-                                    eprintln!("Error: {:?}", err);
+                                    eprintln!("Error: {err:?}");
                                 }
                             }
                         } else {

@@ -32,10 +32,10 @@ impl fmt::Display for InputFormFieldError {
                 write!(f, "Invalid number. Must be at least zero")
             }
             InputFormFieldError::TooShort(min_length) => {
-                write!(f, "Must be at least {} characters long", min_length)
+                write!(f, "Must be at least {min_length} characters long")
             }
             InputFormFieldError::Custom(s) => {
-                write!(f, "{}", s)
+                write!(f, "{s}")
             }
         }
     }

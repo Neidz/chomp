@@ -14,11 +14,11 @@ impl fmt::Display for DataError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             DataError::UniqueConstraintViolation(field) => {
-                write!(f, "unique constraint violation on field: {}", field)
+                write!(f, "unique constraint violation on field: {field}")
             }
-            DataError::DatabaseError(err) => write!(f, "database error: {}", err),
+            DataError::DatabaseError(err) => write!(f, "database error: {err}"),
             DataError::NoRows => write!(f, "query returned no rows"),
-            DataError::Custom(err) => write!(f, "{}", err),
+            DataError::Custom(err) => write!(f, "{err}"),
         }
     }
 }
@@ -59,7 +59,7 @@ impl From<SqliteError> for DataError {
             SqliteError::SqliteFailure(_, None) => {
                 DataError::DatabaseError("unexpected database error".to_string())
             }
-            _ => DataError::DatabaseError(format!("unexpected SQLite error: {:?}", err)),
+            _ => DataError::DatabaseError(format!("unexpected SQLite error: {err:?}")),
         }
     }
 }

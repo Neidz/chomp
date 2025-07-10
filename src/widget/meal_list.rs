@@ -435,10 +435,10 @@ fn list_footer(
     let row = row![
         Text::new("Sum").width(Length::Fill),
         Text::new("").width(Length::Fill),
-        Text::new(format!("{:.1}", calories_sum)).width(Length::Fill),
-        Text::new(format!("{:.1}", fats_sum)).width(Length::Fill),
-        Text::new(format!("{:.1}", proteins_sum)).width(Length::Fill),
-        Text::new(format!("{:.1}", carbohydrates_sum)).width(Length::Fill),
+        Text::new(format!("{calories_sum:.1}")).width(Length::Fill),
+        Text::new(format!("{fats_sum:.1}")).width(Length::Fill),
+        Text::new(format!("{proteins_sum:.1}")).width(Length::Fill),
+        Text::new(format!("{carbohydrates_sum:.1}")).width(Length::Fill),
         Text::new("").width(Length::Fill),
     ]
     .padding(10)
@@ -464,7 +464,7 @@ pub fn meal_stats(stats: &MealDayStats, target: &CalorieTarget) -> Element<'stat
 
 fn meal_stat(label: &str, value: f32, max_value: f32) -> Element<Message> {
     column![
-        Text::new(format!("{} {:.1}/{:.1}", label, value, max_value)),
+        Text::new(format!("{label} {value:.1}/{max_value:.1}")),
         progress_bar(0.0..=100.0, value / max_value * 100.0),
     ]
     .align_x(Alignment::Center)

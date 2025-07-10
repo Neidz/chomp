@@ -210,7 +210,7 @@ impl Widget for UpdateProduct {
                                     ))
                                 }
                                 _ => {
-                                    eprintln!("Error: {:?}", err);
+                                    eprintln!("Error: {err:?}");
                                 }
                             }
                         } else {
