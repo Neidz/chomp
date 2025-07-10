@@ -14,8 +14,9 @@ fn main() -> iced::Result {
     } else {
         "error"
     };
-    let filter =
-        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(default_level));
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+        EnvFilter::new(format!("{}={}", env!("CARGO_PKG_NAME"), default_level))
+    });
     tracing_subscriber::fmt().with_env_filter(filter).init();
 
     let db = prepare_conn();
