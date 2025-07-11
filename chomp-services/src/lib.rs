@@ -1,20 +1,20 @@
 use std::{cell::RefCell, rc::Rc};
 
-use calorie_target::CalorieTargetService;
 use meals::MealService;
+use nutrition_target::NutritionTargetService;
 use product::ProductService;
 pub use rusqlite::Connection;
 use weight::WeightService;
 
-mod calorie_target;
 mod error;
 mod meals;
+mod nutrition_target;
 mod product;
 mod weight;
 
-pub use calorie_target::CalorieTarget;
 pub use error::ServiceError;
 pub use meals::{AddMealProduct, Meal, MealDayStats, MealProduct, UpdateMealProductWeight};
+pub use nutrition_target::NutritionTarget;
 pub use product::{CreateUpdateProduct, Product};
 pub use weight::Weight;
 
@@ -22,7 +22,7 @@ pub struct Services {
     pub product: ProductService,
     pub weight: WeightService,
     pub meal: MealService,
-    pub calorie_target: CalorieTargetService,
+    pub nutrition_target: NutritionTargetService,
 }
 
 impl Services {
@@ -32,13 +32,13 @@ impl Services {
         let product = ProductService::new(db_rc.clone());
         let weight = WeightService::new(db_rc.clone());
         let meal = MealService::new(db_rc.clone());
-        let calorie_target = CalorieTargetService::new(db_rc.clone());
+        let nutrition_target = NutritionTargetService::new(db_rc.clone());
 
         Services {
             product,
             weight,
             meal,
-            calorie_target,
+            nutrition_target,
         }
     }
 }

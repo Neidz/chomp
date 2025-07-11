@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use chomp_services::{
-    AddMealProduct, CalorieTarget, Meal, MealDayStats, MealProduct, Product,
+    AddMealProduct, Meal, MealDayStats, MealProduct, NutritionTarget, Product,
     UpdateMealProductWeight,
 };
 use chrono::{Days, Local, NaiveDate};
@@ -52,7 +52,7 @@ pub struct MealList {
     day: NaiveDate,
     meals: Vec<Meal>,
     stats: MealDayStats,
-    target: CalorieTarget,
+    target: NutritionTarget,
 
     add_meal_product_form: Option<MealProductForm>,
     update_meal_product_form: Option<UpdateMealProductForm>,
@@ -64,7 +64,7 @@ impl MealList {
         day: NaiveDate,
         meals: Vec<Meal>,
         stats: MealDayStats,
-        target: CalorieTarget,
+        target: NutritionTarget,
     ) -> Self {
         assert!(!meals.is_empty());
         MealList {
@@ -448,7 +448,7 @@ fn list_footer(
         .into()
 }
 
-pub fn meal_stats(stats: &MealDayStats, target: &CalorieTarget) -> Element<'static, Message> {
+pub fn meal_stats(stats: &MealDayStats, target: &NutritionTarget) -> Element<'static, Message> {
     row![
         meal_stat("Calories", stats.calories, target.calories),
         meal_stat("Proteins", stats.proteins, target.proteins),

@@ -52,11 +52,17 @@ pub const CREATE_CALORIE_TARGETS_TABLE_QUERY_4: Migration = Migration {
     id: 4,
 };
 
-pub const CREATE_WEIGHTRS_TABLE_QUERY_5: Migration = Migration {
+pub const CREATE_WEIGHTS_TABLE_QUERY_5: Migration = Migration {
     query: "
         CREATE TABLE IF NOT EXISTS weights (
             day TEXT PRIMARY KEY NOT NULL,
             weight REAL NOT NULL
         );",
     id: 5,
+};
+
+pub const RENAME_CALORIE_TARGETS_TO_NUTRITION_TARGETS_QUERY_6: Migration = Migration {
+    query: "
+        ALTER TABLE calorie_targets RENAME TO nutrition_targets",
+    id: 6,
 };

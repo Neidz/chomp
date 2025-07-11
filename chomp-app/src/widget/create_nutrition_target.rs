@@ -1,4 +1,4 @@
-use chomp_services::{CalorieTarget, ServiceError};
+use chomp_services::{NutritionTarget, ServiceError};
 use chrono::NaiveDate;
 use iced::{
     widget::{column, row, Button, Text},
@@ -10,7 +10,7 @@ use crate::app::{Context, Message, NextWidget};
 use super::{sidebar::sidebar, DayFormField, InputFormField, InputFormFieldError, Widget};
 
 #[derive(Debug, Clone)]
-pub enum CreateCalorieTargetMessage {
+pub enum CreateNutritionTargetMessage {
     UpdateDay(NaiveDate),
     UpdateCalories(String),
     UpdateFats(String),
@@ -19,14 +19,14 @@ pub enum CreateCalorieTargetMessage {
     Submit,
 }
 
-impl From<CreateCalorieTargetMessage> for Message {
-    fn from(value: CreateCalorieTargetMessage) -> Self {
-        Message::CreateCalorieTarget(value)
+impl From<CreateNutritionTargetMessage> for Message {
+    fn from(value: CreateNutritionTargetMessage) -> Self {
+        Message::CreateNutritionTarget(value)
     }
 }
 
 #[derive(Debug)]
-pub struct CreateCalorieTarget {
+pub struct CreateNutritionTarget {
     day: DayFormField,
     calories: InputFormField<f32>,
     fats: InputFormField<f32>,
@@ -34,9 +34,9 @@ pub struct CreateCalorieTarget {
     carbohydrates: InputFormField<f32>,
 }
 
-impl CreateCalorieTarget {
+impl CreateNutritionTarget {
     pub fn new() -> Self {
-        CreateCalorieTarget {
+        CreateNutritionTarget {
             day: DayFormField::new("Date*"),
             calories: InputFormField::new("Calories* (kcal/day)", "2500.0"),
             fats: InputFormField::new_with_raw_value("Fats* (%)", "20.0", "20"),
@@ -45,7 +45,7 @@ impl CreateCalorieTarget {
         }
     }
 
-    pub fn parse(&mut self) -> Result<CalorieTarget, String> {
+    pub fn parse(&mut self) -> Result<NutritionTarget, String> {
         self.calories.validate(|input| {
             if input.is_empty() {
                 Err(InputFormFieldError::MissingRequiredValue)
@@ -121,7 +121,7 @@ impl CreateCalorieTarget {
         let proteins = proteins_percentage / 100.0 * calories / 4.0;
         let carbohydrates = carbohydrates_percentage / 100.0 * calories / 4.0;
 
-        Ok(CalorieTarget {
+        Ok(NutritionTarget {
             day: self.day.value,
             calories,
             fats,
@@ -131,26 +131,26 @@ impl CreateCalorieTarget {
     }
 }
 
-impl Widget for CreateCalorieTarget {
+impl Widget for CreateNutritionTarget {
     fn view(&self) -> Element<Message> {
         let form = column![
             self.day
-                .view(|d| { CreateCalorieTargetMessage::UpdateDay(d).into() }),
+                .view(|d| { CreateNutritionTargetMessage::UpdateDay(d).into() }),
             self.calories
-                .view(|c| { CreateCalorieTargetMessage::UpdateCalories(c).into() }),
+                .view(|c| { CreateNutritionTargetMessage::UpdateCalories(c).into() }),
             self.fats
-                .view(|f| { CreateCalorieTargetMessage::UpdateFats(f).into() }),
+                .view(|f| { CreateNutritionTargetMessage::UpdateFats(f).into() }),
             self.proteins
-                .view(|p| { CreateCalorieTargetMessage::UpdateProteins(p).into() }),
+                .view(|p| { CreateNutritionTargetMessage::UpdateProteins(p).into() }),
             self.carbohydrates
-                .view(|c| { CreateCalorieTargetMessage::UpdateCarbohydrates(c).into() }),
+                .view(|c| { CreateNutritionTargetMessage::UpdateCarbohydrates(c).into() }),
         ]
         .spacing(10);
 
         let content = column![
-            Text::new("Create calorie target").size(40),
+            Text::new("Create nutrition target").size(40),
             form,
-            Button::new("Create").on_press(CreateCalorieTargetMessage::Submit.into())
+            Button::new("Create").on_press(CreateNutritionTargetMessage::Submit.into())
         ]
         .spacing(10);
 
@@ -162,29 +162,29 @@ impl Widget for CreateCalorieTarget {
     }
 
     fn update(&mut self, ctx: &mut Context, msg: Message) -> Task<Message> {
-        if let Message::CreateCalorieTarget(msg) = msg {
+        if let Message::CreateNutritionTarget(msg) = msg {
             match msg {
-                CreateCalorieTargetMessage::UpdateDay(day) => {
+                CreateNutritionTargetMessage::UpdateDay(day) => {
                     self.day.value = day;
                 }
-                CreateCalorieTargetMessage::UpdateCalories(raw_calories) => {
+                CreateNutritionTargetMessage::UpdateCalories(raw_calories) => {
                     self.calories.raw_input = raw_calories;
                 }
-                CreateCalorieTargetMessage::UpdateFats(raw_fats) => {
+                CreateNutritionTargetMessage::UpdateFats(raw_fats) => {
                     self.fats.raw_input = raw_fats;
                 }
-                CreateCalorieTargetMessage::UpdateProteins(raw_proteins) => {
+                CreateNutritionTargetMessage::UpdateProteins(raw_proteins) => {
                     self.proteins.raw_input = raw_proteins;
                 }
-                CreateCalorieTargetMessage::UpdateCarbohydrates(raw_carbohydrates) => {
+                CreateNutritionTargetMessage::UpdateCarbohydrates(raw_carbohydrates) => {
                     self.carbohydrates.raw_input = raw_carbohydrates;
                 }
-                CreateCalorieTargetMessage::Submit => {
+                CreateNutritionTargetMessage::Submit => {
                     if let Ok(target) = self.parse() {
-                        if let Some(err) = ctx.services.calorie_target.create(target).err() {
+                        if let Some(err) = ctx.services.nutrition_target.create(target).err() {
                             match err {
                                 ServiceError::UniqueConstraintViolation(unique_field)
-                                    if unique_field == "calorie_targets.day" =>
+                                    if unique_field == "nutrition_targets.day" =>
                                 {
                                     self.day.error = Some(InputFormFieldError::Custom(
                                         "Target with this date already exists".to_string(),
@@ -195,7 +195,7 @@ impl Widget for CreateCalorieTarget {
                                 }
                             }
                         } else {
-                            ctx.next_widget = Some(NextWidget::CalorieTargetList);
+                            ctx.next_widget = Some(NextWidget::NutritionTargetList);
                         }
                     };
                 }

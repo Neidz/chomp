@@ -6,10 +6,10 @@ use iced::{
 };
 
 use crate::widget::{
-    CalorieTargetList, CalorieTargetListMessage, CreateCalorieTarget, CreateCalorieTargetMessage,
-    CreateProduct, CreateProductMessage, CreateWeight, CreateWeightMessage, Dashboard,
-    DashboardMessage, MealList, MealListMessage, ProductList, ProductListMessage, Tools,
-    ToolsMessage, UpdateCalorieTarget, UpdateCalorieTargetMessage, UpdateProduct,
+    CreateNutritionTarget, CreateNutritionTargetMessage, CreateProduct, CreateProductMessage,
+    CreateWeight, CreateWeightMessage, Dashboard, DashboardMessage, MealList, MealListMessage,
+    NutritionTargetList, NutritionTargetListMessage, ProductList, ProductListMessage, Tools,
+    ToolsMessage, UpdateNutritionTarget, UpdateNutritionTargetMessage, UpdateProduct,
     UpdateProductMessage, UpdateWeight, UpdateWeightMessage, WeightList, WeightListMessage, Widget,
 };
 
@@ -23,9 +23,9 @@ pub enum NextWidget {
     CreateWeight,
     UpdateWeight(NaiveDate),
     MealList,
-    CalorieTargetList,
-    CreateCalorieTarget,
-    UpdateCalorieTarget(NaiveDate),
+    NutritionTargetList,
+    CreateNutritionTarget,
+    UpdateNutritionTarget(NaiveDate),
     Tools,
 }
 
@@ -43,9 +43,9 @@ pub enum Message {
     CreateWeight(CreateWeightMessage),
     UpdateWeight(UpdateWeightMessage),
     MealList(MealListMessage),
-    CalorieTargetList(CalorieTargetListMessage),
-    CreateCalorieTarget(CreateCalorieTargetMessage),
-    UpdateCalorieTarget(UpdateCalorieTargetMessage),
+    NutritionTargetList(NutritionTargetListMessage),
+    CreateNutritionTarget(CreateNutritionTargetMessage),
+    UpdateNutritionTarget(UpdateNutritionTargetMessage),
     Tools(ToolsMessage),
 }
 
@@ -164,31 +164,36 @@ impl App {
                     let target = match self
                         .ctx
                         .services
-                        .calorie_target
+                        .nutrition_target
                         .read_last_or_create_default()
                     {
                         Ok(t) => t,
                         Err(err) => {
-                            tracing::error!("Failed to get calorie target: {}", err);
+                            tracing::error!("Failed to get nutrition target: {}", err);
                             panic!()
                         }
                     };
                     Box::new(MealList::new(day, meals, stats, target))
                 }
-                NextWidget::CalorieTargetList => {
-                    let targets = self.ctx.services.calorie_target.list().unwrap_or_default();
-                    Box::new(CalorieTargetList::new(targets))
+                NextWidget::NutritionTargetList => {
+                    let targets = self
+                        .ctx
+                        .services
+                        .nutrition_target
+                        .list()
+                        .unwrap_or_default();
+                    Box::new(NutritionTargetList::new(targets))
                 }
-                NextWidget::CreateCalorieTarget => Box::new(CreateCalorieTarget::new()),
-                NextWidget::UpdateCalorieTarget(day) => {
-                    let target = match self.ctx.services.calorie_target.read(day) {
+                NextWidget::CreateNutritionTarget => Box::new(CreateNutritionTarget::new()),
+                NextWidget::UpdateNutritionTarget(day) => {
+                    let target = match self.ctx.services.nutrition_target.read(day) {
                         Ok(t) => t,
                         Err(err) => {
-                            tracing::error!("Failed to read calorie target: {}", err);
+                            tracing::error!("Failed to read nutrition target: {}", err);
                             panic!()
                         }
                     };
-                    Box::new(UpdateCalorieTarget::new(target))
+                    Box::new(UpdateNutritionTarget::new(target))
                 }
                 NextWidget::Tools => Box::new(Tools::new()),
             };

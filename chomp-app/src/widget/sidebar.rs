@@ -15,8 +15,8 @@ pub fn sidebar() -> Element<'static, Message> {
         ),
         ("Weight List", Message::ChangeWidget(NextWidget::WeightList)),
         (
-            "Calorie Target List",
-            Message::ChangeWidget(NextWidget::CalorieTargetList),
+            "Nutrition Target List",
+            Message::ChangeWidget(NextWidget::NutritionTargetList),
         ),
         ("Tools", Message::ChangeWidget(NextWidget::Tools)),
     ];

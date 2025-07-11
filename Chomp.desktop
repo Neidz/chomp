@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=Chomp
-Comment=Simple tool for tracking calorie, proteins, fats and carbohydrates intake
+Comment=Simple tool for tracking calories, proteins, fats and carbohydrates intake
 Exec=chomp
 Terminal=false
 Type=Application

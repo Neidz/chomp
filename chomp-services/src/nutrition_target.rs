@@ -6,7 +6,7 @@ use rusqlite::{params, Connection};
 use super::ServiceError;
 
 #[derive(Debug, Clone)]
-pub struct CalorieTarget {
+pub struct NutritionTarget {
     pub day: NaiveDate,
     pub calories: f32,
     pub fats: f32,
@@ -14,7 +14,7 @@ pub struct CalorieTarget {
     pub carbohydrates: f32,
 }
 
-impl CalorieTarget {
+impl NutritionTarget {
     pub fn new(
         day: NaiveDate,
         calories: f32,
@@ -22,7 +22,7 @@ impl CalorieTarget {
         proteins: f32,
         carbohydrates: f32,
     ) -> Self {
-        CalorieTarget {
+        NutritionTarget {
             day,
             calories,
             fats,
@@ -32,18 +32,18 @@ impl CalorieTarget {
     }
 }
 
-pub struct CalorieTargetService {
+pub struct NutritionTargetService {
     db: Rc<RefCell<Connection>>,
 }
 
-impl CalorieTargetService {
+impl NutritionTargetService {
     pub fn new(db: Rc<RefCell<Connection>>) -> Self {
-        CalorieTargetService { db }
+        NutritionTargetService { db }
     }
 
-    pub fn create(&self, target: CalorieTarget) -> Result<(), ServiceError> {
+    pub fn create(&self, target: NutritionTarget) -> Result<(), ServiceError> {
         let query = "
-            INSERT INTO calorie_targets (day, calories, fats, proteins, carbohydrates)
+            INSERT INTO nutrition_targets (day, calories, fats, proteins, carbohydrates)
     	    VALUES (?1, ?2, ?3, ?4, ?5)";
         let args = params![
             format!("{}", target.day.format("%Y-%m-%d")),
@@ -60,9 +60,9 @@ impl CalorieTargetService {
         Ok(())
     }
 
-    pub fn update(&self, target: CalorieTarget) -> Result<(), ServiceError> {
+    pub fn update(&self, target: NutritionTarget) -> Result<(), ServiceError> {
         let query = "
-            UPDATE calorie_targets
+            UPDATE nutrition_targets
             SET calories=?1, fats=?2, proteins=?3, carbohydrates=?4
             WHERE day = ?5";
         let args = params![
@@ -80,10 +80,10 @@ impl CalorieTargetService {
         Ok(())
     }
 
-    pub fn read(&self, day: NaiveDate) -> Result<CalorieTarget, ServiceError> {
+    pub fn read(&self, day: NaiveDate) -> Result<NutritionTarget, ServiceError> {
         let query = "
             SELECT day, calories, fats, proteins, carbohydrates
-            FROM calorie_targets
+            FROM nutrition_targets
     		WHERE day = ?1";
         let args = params![format!("{}", day.format("%Y-%m-%d")),];
 
@@ -91,7 +91,7 @@ impl CalorieTargetService {
         let mut stmt = db.prepare(query)?;
 
         stmt.query_row(args, |row| {
-            Ok(CalorieTarget {
+            Ok(NutritionTarget {
                 day: row.get(0)?,
                 calories: row.get(1)?,
                 fats: row.get(2)?,
@@ -102,10 +102,10 @@ impl CalorieTargetService {
         .map_err(ServiceError::from)
     }
 
-    pub fn read_last(&self) -> Result<CalorieTarget, ServiceError> {
+    pub fn read_last(&self) -> Result<NutritionTarget, ServiceError> {
         let query = "
             SELECT day, calories, fats, proteins, carbohydrates
-            FROM calorie_targets
+            FROM nutrition_targets
             ORDER BY day DESC
             LIMIT 1";
 
@@ -113,7 +113,7 @@ impl CalorieTargetService {
         let mut stmt = db.prepare(query)?;
 
         stmt.query_row([], |row| {
-            Ok(CalorieTarget {
+            Ok(NutritionTarget {
                 day: row.get(0)?,
                 calories: row.get(1)?,
                 fats: row.get(2)?,
@@ -124,12 +124,12 @@ impl CalorieTargetService {
         .map_err(ServiceError::from)
     }
 
-    pub fn read_last_or_create_default(&self) -> Result<CalorieTarget, ServiceError> {
+    pub fn read_last_or_create_default(&self) -> Result<NutritionTarget, ServiceError> {
         match self.read_last() {
             Ok(t) => Ok(t),
             Err(ServiceError::NoRows) => {
                 let today = Local::now().date_naive();
-                let target = CalorieTarget::new(today, 2500.0, 80.0, 200.0, 245.0);
+                let target = NutritionTarget::new(today, 2500.0, 80.0, 200.0, 245.0);
                 self.create(target)?;
                 self.read_last()
             }
@@ -139,7 +139,7 @@ impl CalorieTargetService {
 
     pub fn delete(&self, day: NaiveDate) -> Result<(), ServiceError> {
         let query = "
-            DELETE FROM calorie_targets
+            DELETE FROM nutrition_targets
     	    WHERE day = ?1";
         let args = params![format!("{}", day.format("%Y-%m-%d"))];
 
@@ -150,10 +150,10 @@ impl CalorieTargetService {
         Ok(())
     }
 
-    pub fn list(&self) -> Result<Vec<CalorieTarget>, ServiceError> {
+    pub fn list(&self) -> Result<Vec<NutritionTarget>, ServiceError> {
         let query = "
             SELECT day, calories, fats, proteins, carbohydrates
-            FROM calorie_targets
+            FROM nutrition_targets
             ORDER BY day DESC";
 
         let db = self.db.borrow();
@@ -161,7 +161,7 @@ impl CalorieTargetService {
 
         let targets = stmt
             .query_map([], |row| {
-                Ok(CalorieTarget {
+                Ok(NutritionTarget {
                     day: row.get(0)?,
                     calories: row.get(1)?,
                     fats: row.get(2)?,
@@ -170,7 +170,7 @@ impl CalorieTargetService {
                 })
             })
             .map_err(ServiceError::from)?
-            .collect::<Result<Vec<CalorieTarget>, _>>()?;
+            .collect::<Result<Vec<NutritionTarget>, _>>()?;
 
         Ok(targets)
     }

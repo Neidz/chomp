@@ -1,4 +1,4 @@
-use chomp_services::CalorieTarget;
+use chomp_services::NutritionTarget;
 use chrono::NaiveDate;
 use iced::{
     widget::{column, row, Button, Container, Scrollable, Text},
@@ -10,33 +10,33 @@ use crate::app::{Context, Message, NextWidget};
 use super::{sidebar, style::TableRowStyle, Widget};
 
 #[derive(Debug, Clone)]
-pub enum CalorieTargetListMessage {
+pub enum NutritionTargetListMessage {
     RedirectToCreate,
     DeleteTarget(NaiveDate),
 }
 
-impl From<CalorieTargetListMessage> for Message {
-    fn from(value: CalorieTargetListMessage) -> Self {
-        Message::CalorieTargetList(value)
+impl From<NutritionTargetListMessage> for Message {
+    fn from(value: NutritionTargetListMessage) -> Self {
+        Message::NutritionTargetList(value)
     }
 }
 
 #[derive(Debug)]
-pub struct CalorieTargetList {
-    targets: Vec<CalorieTarget>,
+pub struct NutritionTargetList {
+    targets: Vec<NutritionTarget>,
 }
 
-impl CalorieTargetList {
-    pub fn new(targets: Vec<CalorieTarget>) -> Self {
-        CalorieTargetList { targets }
+impl NutritionTargetList {
+    pub fn new(targets: Vec<NutritionTarget>) -> Self {
+        NutritionTargetList { targets }
     }
 
     fn refresh(&mut self, ctx: &Context) {
-        self.targets = ctx.services.calorie_target.list().unwrap_or_default();
+        self.targets = ctx.services.nutrition_target.list().unwrap_or_default();
     }
 }
 
-impl Widget for CalorieTargetList {
+impl Widget for NutritionTargetList {
     fn view(&self) -> Element<Message> {
         let mut table = column![list_header_row()];
         for (i, target) in self.targets.iter().enumerate() {
@@ -45,8 +45,8 @@ impl Widget for CalorieTargetList {
 
         let content = column![
             row![
-                Text::new("Calorie target list").size(40),
-                Button::new("+").on_press(CalorieTargetListMessage::RedirectToCreate.into())
+                Text::new("Nutrition target list").size(40),
+                Button::new("+").on_press(NutritionTargetListMessage::RedirectToCreate.into())
             ]
             .spacing(10)
             .align_y(Alignment::Center),
@@ -62,14 +62,14 @@ impl Widget for CalorieTargetList {
     }
 
     fn update(&mut self, ctx: &mut Context, msg: Message) -> Task<Message> {
-        if let Message::CalorieTargetList(msg) = msg {
+        if let Message::NutritionTargetList(msg) = msg {
             match msg {
-                CalorieTargetListMessage::RedirectToCreate => {
-                    ctx.next_widget = Some(NextWidget::CreateCalorieTarget);
+                NutritionTargetListMessage::RedirectToCreate => {
+                    ctx.next_widget = Some(NextWidget::CreateNutritionTarget);
                 }
-                CalorieTargetListMessage::DeleteTarget(day) => {
-                    if let Err(err) = ctx.services.calorie_target.delete(day) {
-                        tracing::error!("Failed to delete calorie target: {}", err);
+                NutritionTargetListMessage::DeleteTarget(day) => {
+                    if let Err(err) = ctx.services.nutrition_target.delete(day) {
+                        tracing::error!("Failed to delete nutrition target: {}", err);
                         std::process::exit(1);
                     }
                     self.refresh(ctx);
@@ -96,7 +96,7 @@ fn list_header_row() -> Element<'static, Message> {
     Container::new(row).width(Length::Fill).into()
 }
 
-fn list_row(t: &CalorieTarget, even: bool) -> Element<Message> {
+fn list_row(t: &NutritionTarget, even: bool) -> Element<Message> {
     let row = row![
         Text::new(format!("{}", t.day.format("%Y-%m-%d")),).width(Length::Fill),
         Text::new(format!("{:.1}", t.calories)).width(Length::Fill),
@@ -104,10 +104,10 @@ fn list_row(t: &CalorieTarget, even: bool) -> Element<Message> {
         Text::new(format!("{:.1}", t.proteins)).width(Length::Fill),
         Text::new(format!("{:.1}", t.carbohydrates)).width(Length::Fill),
         row![
-            Button::new("Update").on_press(Message::ChangeWidget(NextWidget::UpdateCalorieTarget(
-                t.day
-            ))),
-            Button::new("Delete").on_press(CalorieTargetListMessage::DeleteTarget(t.day).into())
+            Button::new("Update").on_press(Message::ChangeWidget(
+                NextWidget::UpdateNutritionTarget(t.day)
+            )),
+            Button::new("Delete").on_press(NutritionTargetListMessage::DeleteTarget(t.day).into())
         ]
         .spacing(10)
         .width(Length::Fill)
