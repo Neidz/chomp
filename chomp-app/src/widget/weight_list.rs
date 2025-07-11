@@ -70,7 +70,7 @@ impl Widget for WeightList {
                 WeightListMessage::DeleteWeight(day) => {
                     if let Err(err) = ctx.services.weight.delete(day) {
                         tracing::error!("Failed to delete weight: {}", err);
-                        panic!();
+                        std::process::exit(1);
                     }
                     self.refresh(ctx);
                 }

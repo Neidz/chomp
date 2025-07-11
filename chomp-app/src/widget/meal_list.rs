@@ -83,14 +83,14 @@ impl MealList {
             Ok(m) => m,
             Err(err) => {
                 tracing::error!("Failed to get list of meals: {}", err);
-                panic!();
+                std::process::exit(1);
             }
         };
         self.stats = match ctx.services.meal.day_stats(self.day) {
             Ok(s) => s,
             Err(err) => {
                 tracing::error!("Failed to get day stats: {}", err);
-                panic!();
+                std::process::exit(1);
             }
         };
     }
@@ -165,7 +165,7 @@ impl Widget for MealList {
                             Ok(m) => m,
                             Err(err) => {
                                 tracing::error!("Failed to get meal: {}", err);
-                                panic!();
+                                std::process::exit(1);
                             }
                         };
                         let products = ctx.services.product.list().unwrap_or_default();
@@ -189,7 +189,7 @@ impl Widget for MealList {
                         Ok(add_meal_product) => {
                             if let Err(err) = ctx.services.meal.add_product(add_meal_product) {
                                 tracing::error!("Failed to add product: {}", err);
-                                panic!();
+                                std::process::exit(1);
                             }
                             self.refresh(ctx);
                             self.add_meal_product_form = None;
@@ -206,7 +206,7 @@ impl Widget for MealList {
                                 Ok(mp) => mp,
                                 Err(err) => {
                                     tracing::error!("Failed to get meal product: {}", err);
-                                    panic!();
+                                    std::process::exit(1);
                                 }
                             };
                             self.update_meal_product_form =
@@ -240,7 +240,7 @@ impl Widget for MealList {
                 MealListMessage::DeleteMealProduct(meal_product_id) => {
                     if let Err(err) = ctx.services.meal.delete_product(meal_product_id) {
                         tracing::error!("Failed to delete meal product: {}", err);
-                        panic!();
+                        std::process::exit(1);
                     }
                     self.refresh(ctx);
                 }
@@ -250,7 +250,7 @@ impl Widget for MealList {
                             Ok(m) => m,
                             Err(err) => {
                                 tracing::error!("Failed to get meal: {}", err);
-                                panic!();
+                                std::process::exit(1);
                             }
                         };
                         let prev_day = meal.day.checked_sub_days(Days::new(1)).unwrap();
@@ -286,7 +286,7 @@ impl Widget for MealList {
                                         "Failed to add meal product while copying meal: {}",
                                         err
                                     );
-                                    panic!();
+                                    std::process::exit(1);
                                 }
                             });
                             self.refresh(ctx);

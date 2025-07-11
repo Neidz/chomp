@@ -21,7 +21,7 @@ fn main() -> iced::Result {
         Ok(db) => db,
         Err(err) => {
             tracing::error!("Failed to prepare database connection: {err:?}");
-            panic!()
+            std::process::exit(1);
         }
     };
 

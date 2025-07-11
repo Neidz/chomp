@@ -114,7 +114,7 @@ impl App {
                         Ok(p) => p,
                         Err(err) => {
                             tracing::error!("Failed to get product list: {}", err);
-                            panic!()
+                            std::process::exit(1);
                         }
                     };
                     Box::new(ProductList::new(products))
@@ -125,7 +125,7 @@ impl App {
                         Ok(p) => p,
                         Err(err) => {
                             tracing::error!("Failed to get product by id: {}", err);
-                            panic!()
+                            std::process::exit(1);
                         }
                     };
                     Box::new(UpdateProduct::new(product))

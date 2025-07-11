@@ -170,7 +170,7 @@ impl Widget for UpdateCalorieTarget {
                     if let Ok(target) = self.parse() {
                         if let Err(err) = ctx.services.calorie_target.update(target) {
                             tracing::error!("Failed to update calorie target: {}", err);
-                            panic!();
+                            std::process::exit(1);
                         }
                         ctx.next_widget = Some(NextWidget::CalorieTargetList);
                     };

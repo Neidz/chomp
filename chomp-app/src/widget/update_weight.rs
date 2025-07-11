@@ -90,7 +90,7 @@ impl Widget for UpdateWeight {
                     if let Ok(weight) = self.parse() {
                         if let Err(err) = ctx.services.weight.update(weight) {
                             tracing::error!("Failed to update weight: {}", err);
-                            panic!();
+                            std::process::exit(1);
                         }
                         ctx.next_widget = Some(NextWidget::WeightList);
                     };

@@ -101,7 +101,7 @@ impl Widget for ProductList {
                 ProductListMessage::DeleteProduct(product_id) => {
                     if let Err(err) = ctx.services.product.delete(product_id) {
                         tracing::error!("Failed to delete product: {}", err);
-                        panic!();
+                        std::process::exit(1);
                     }
                     self.refresh(ctx);
                 }

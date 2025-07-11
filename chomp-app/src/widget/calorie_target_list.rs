@@ -70,7 +70,7 @@ impl Widget for CalorieTargetList {
                 CalorieTargetListMessage::DeleteTarget(day) => {
                     if let Err(err) = ctx.services.calorie_target.delete(day) {
                         tracing::error!("Failed to delete calorie target: {}", err);
-                        panic!();
+                        std::process::exit(1);
                     }
                     self.refresh(ctx);
                 }
