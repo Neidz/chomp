@@ -8,6 +8,9 @@ use migrations::{
 };
 use rusqlite::Connection;
 
+use crate::error::Error;
+
+mod error;
 mod migrate;
 mod migrations;
 
@@ -31,13 +34,10 @@ fn run_migrations(conn: &Connection) -> Result<(), String> {
     migrate(conn, migrations)
 }
 
-pub fn prepare_conn() -> Connection {
+pub fn prepare_conn() -> Result<Connection, Error> {
     let home = match get_home_dir() {
         Some(d) => d,
-        None => {
-            tracing::error!("Failed to get home directory");
-            panic!();
-        }
+        None => return Err(Error::IO("failed to get home directory".to_string())),
     };
     let db_path: PathBuf = home
         .join(".local")
@@ -47,30 +47,33 @@ pub fn prepare_conn() -> Connection {
 
     let db_parent = match db_path.parent() {
         Some(p) => p,
-        None => {
-            tracing::error!("Failed to get parent of db path");
-            panic!();
-        }
+        None => return Err(Error::IO("failed to get parent of db path".to_string())),
     };
     if let Err(err) = std::fs::create_dir_all(db_parent) {
-        tracing::error!("Failed to create directories for db path: {}", err);
-        panic!();
+        return Err(Error::IO(format!(
+            "failed to create directories for db path: {}",
+            err
+        )));
     }
 
     let conn = match Connection::open(db_path) {
         Ok(c) => c,
         Err(err) => {
-            tracing::error!("Failed to open database connection: {}", err);
-            panic!()
+            return Err(Error::Connection(format!(
+                "failed to open database connection: {}",
+                err.to_string()
+            )))
         }
     };
 
     if let Err(err) = run_migrations(&conn) {
-        tracing::error!("Failed to perform database migration: {}", err);
-        panic!()
+        return Err(Error::Migration(format!(
+            "failed to perform database migration: {}",
+            err.to_string()
+        )));
     }
 
-    conn
+    Ok(conn)
 }
 
 #[cfg(test)]

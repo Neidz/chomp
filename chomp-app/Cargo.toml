@@ -1,0 +1,16 @@
+[package]
+name = "chomp-app"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chomp-db = { path = "../chomp-db" }
+iced = { version = "0.13.1", features = ["canvas", "tokio"] }
+rusqlite = { workspace = true, features = ["bundled", "chrono"] }
+serde_json = "1"
+serde = { workspace = true, features = ["derive"] }
+chrono = { workspace = true, features = ["serde"] }
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+rfd = "0.15.3"
+csv = "1.3.1"

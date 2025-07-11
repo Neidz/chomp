@@ -524,9 +524,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
 
 [[package]]
-name = "chomp"
+name = "chomp-app"
 version = "0.1.0"
 dependencies = [
+ "chomp-db",
  "chrono",
  "csv",
  "iced",
@@ -536,6 +537,13 @@ dependencies = [
  "serde_json",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "chomp-db"
+version = "0.1.0"
+dependencies = [
+ "rusqlite",
 ]
 
 [[package]]

@@ -1,11 +1,10 @@
 use app::App;
-use db::prepare_conn;
+use chomp_db::prepare_conn;
 use iced::{Task, Theme};
 use tracing_subscriber::EnvFilter;
 
 mod app;
 mod data;
-mod db;
 mod widget;
 
 fn main() -> iced::Result {
@@ -19,7 +18,13 @@ fn main() -> iced::Result {
     });
     tracing_subscriber::fmt().with_env_filter(filter).init();
 
-    let db = prepare_conn();
+    let db = match prepare_conn() {
+        Ok(db) => db,
+        Err(err) => {
+            tracing::error!("Failed to prepare database connection: {err:?}");
+            panic!()
+        }
+    };
 
     iced::application("Chomp", App::update, App::view)
         .theme(|_| Theme::CatppuccinFrappe)
