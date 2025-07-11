@@ -51,8 +51,7 @@ pub fn prepare_conn() -> Result<Connection, Error> {
     };
     if let Err(err) = std::fs::create_dir_all(db_parent) {
         return Err(Error::IO(format!(
-            "failed to create directories for db path: {}",
-            err
+            "failed to create directories for db path: {err}"
         )));
     }
 
@@ -60,16 +59,14 @@ pub fn prepare_conn() -> Result<Connection, Error> {
         Ok(c) => c,
         Err(err) => {
             return Err(Error::Connection(format!(
-                "failed to open database connection: {}",
-                err.to_string()
+                "failed to open database connection: {err}",
             )))
         }
     };
 
     if let Err(err) = run_migrations(&conn) {
         return Err(Error::Migration(format!(
-            "failed to perform database migration: {}",
-            err.to_string()
+            "failed to perform database migration: {err}"
         )));
     }
 

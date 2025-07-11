@@ -29,6 +29,7 @@ use form_field::*;
 use line_chart::*;
 pub use meal_list::*;
 pub use product_list::*;
+use sidebar::*;
 pub use tools::*;
 pub use update_calorie_target::*;
 pub use update_product::*;

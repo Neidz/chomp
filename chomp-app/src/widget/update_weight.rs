@@ -1,13 +1,11 @@
+use chomp_services::Weight;
 use chrono::NaiveDate;
 use iced::{
     widget::{column, row, Button, Text},
     Element, Length, Task,
 };
 
-use crate::{
-    app::{Context, Message, NextWidget},
-    data::Weight,
-};
+use crate::app::{Context, Message, NextWidget};
 
 use super::{sidebar::sidebar, InputFormField, InputFormFieldError, Widget};
 
@@ -90,7 +88,7 @@ impl Widget for UpdateWeight {
                 }
                 UpdateWeightMessage::Submit => {
                     if let Ok(weight) = self.parse() {
-                        if let Err(err) = ctx.data.weight.update(weight) {
+                        if let Err(err) = ctx.services.weight.update(weight) {
                             tracing::error!("Failed to update weight: {}", err);
                             panic!();
                         }

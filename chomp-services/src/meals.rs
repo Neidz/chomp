@@ -3,7 +3,7 @@ use std::{cell::RefCell, cmp::Ordering, collections::HashMap, rc::Rc};
 use chrono::NaiveDate;
 use rusqlite::{params, Connection};
 
-use super::{DataError, Product};
+use super::{Product, ServiceError};
 
 const DEFAULT_MEALS: [&str; 4] = ["Breakfast", "Snack", "Lunch", "Dinner"];
 
@@ -85,16 +85,16 @@ pub struct MealDayStats {
     pub carbohydrates: f32,
 }
 
-pub struct MealData {
+pub struct MealService {
     db: Rc<RefCell<Connection>>,
 }
 
-impl MealData {
+impl MealService {
     pub fn new(db: Rc<RefCell<Connection>>) -> Self {
-        MealData { db }
+        MealService { db }
     }
 
-    pub fn create(&self, meal: CreateMeal) -> Result<(), DataError> {
+    pub fn create(&self, meal: CreateMeal) -> Result<(), ServiceError> {
         let query = "
             INSERT INTO meals (day, name, position)
             VALUES (?1, ?2, ?3)";
@@ -106,12 +106,12 @@ impl MealData {
 
         let db = self.db.borrow();
         let mut stmt = db.prepare(query)?;
-        stmt.execute(args).map_err(DataError::from)?;
+        stmt.execute(args).map_err(ServiceError::from)?;
 
         Ok(())
     }
 
-    pub fn delete_product(&self, meal_product_id: usize) -> Result<(), DataError> {
+    pub fn delete_product(&self, meal_product_id: usize) -> Result<(), ServiceError> {
         let query = "
             DELETE FROM meal_products
             WHERE id = ?1";
@@ -119,12 +119,12 @@ impl MealData {
 
         let db = self.db.borrow();
         let mut stmt = db.prepare(query)?;
-        stmt.execute(args).map_err(DataError::from)?;
+        stmt.execute(args).map_err(ServiceError::from)?;
 
         Ok(())
     }
 
-    pub fn add_product(&self, add_meal_product: AddMealProduct) -> Result<(), DataError> {
+    pub fn add_product(&self, add_meal_product: AddMealProduct) -> Result<(), ServiceError> {
         let query = "
             INSERT INTO meal_products (meal_id, product_id, weight)
             VALUES (?1, ?2, ?3)";
@@ -136,7 +136,7 @@ impl MealData {
 
         let db = self.db.borrow();
         let mut stmt = db.prepare(query)?;
-        stmt.execute(args).map_err(DataError::from)?;
+        stmt.execute(args).map_err(ServiceError::from)?;
 
         Ok(())
     }
@@ -144,7 +144,7 @@ impl MealData {
     pub fn update_product_weight(
         &self,
         update_meal_product_weight: UpdateMealProductWeight,
-    ) -> Result<(), DataError> {
+    ) -> Result<(), ServiceError> {
         let query = "
             UPDATE meal_products
             SET weight = ?1
@@ -156,12 +156,12 @@ impl MealData {
 
         let db = self.db.borrow();
         let mut stmt = db.prepare(query)?;
-        stmt.execute(args).map_err(DataError::from)?;
+        stmt.execute(args).map_err(ServiceError::from)?;
 
         Ok(())
     }
 
-    pub fn read(&self, id: usize) -> Result<Meal, DataError> {
+    pub fn read(&self, id: usize) -> Result<Meal, ServiceError> {
         let query = "
             SELECT
     			meals.id,
@@ -213,7 +213,7 @@ impl MealData {
 
                 Ok((meal_id, meal_day, meal_name, meal_position, meal_product))
             })
-            .map_err(DataError::from)?
+            .map_err(ServiceError::from)?
             .collect::<Result<Vec<_>, _>>()?;
 
         let (meal_id, meal_day, meal_name, meal_position, _) = rows[0].clone();
@@ -234,12 +234,12 @@ impl MealData {
         Ok(meal)
     }
 
-    pub fn read_by_day_and_name(&self, day: NaiveDate, name: &str) -> Result<Meal, DataError> {
+    pub fn read_by_day_and_name(&self, day: NaiveDate, name: &str) -> Result<Meal, ServiceError> {
         let meal_id = self.read_meal_id(day, name)?;
         self.read(meal_id)
     }
 
-    pub fn read_meal_id(&self, day: NaiveDate, name: &str) -> Result<usize, DataError> {
+    pub fn read_meal_id(&self, day: NaiveDate, name: &str) -> Result<usize, ServiceError> {
         let query = "
             SELECT meals.id
     		FROM meals
@@ -250,10 +250,10 @@ impl MealData {
         let mut stmt = db.prepare(query)?;
 
         stmt.query_row(args, |row| row.get(0))
-            .map_err(DataError::from)
+            .map_err(ServiceError::from)
     }
 
-    pub fn read_product(&self, meal_product_id: usize) -> Result<MealProduct, DataError> {
+    pub fn read_product(&self, meal_product_id: usize) -> Result<MealProduct, ServiceError> {
         let query = "
             SELECT
     			meal_products.id,
@@ -286,10 +286,10 @@ impl MealData {
                 carbohydrates: row.get(8)?,
             })
         })
-        .map_err(DataError::from)
+        .map_err(ServiceError::from)
     }
 
-    pub fn list(&self, day: NaiveDate) -> Result<Vec<Meal>, DataError> {
+    pub fn list(&self, day: NaiveDate) -> Result<Vec<Meal>, ServiceError> {
         let query = "
             SELECT
     			meals.id,
@@ -341,7 +341,7 @@ impl MealData {
 
                 Ok((meal_id, meal_day, meal_name, meal_position, meal_product))
             })
-            .map_err(DataError::from)?
+            .map_err(ServiceError::from)?
             .collect::<Result<Vec<_>, _>>()?;
 
         let mut meals: HashMap<usize, Meal> = HashMap::new();
@@ -366,7 +366,7 @@ impl MealData {
         Ok(sorted_meals)
     }
 
-    pub fn day_stats(&self, day: NaiveDate) -> Result<MealDayStats, DataError> {
+    pub fn day_stats(&self, day: NaiveDate) -> Result<MealDayStats, ServiceError> {
         let query = "
             SELECT
                 COALESCE(SUM(products.calories * meal_products.weight / 100), 0) AS total_calories,
@@ -391,10 +391,10 @@ impl MealData {
                 carbohydrates: row.get(3)?,
             })
         })
-        .map_err(DataError::from)
+        .map_err(ServiceError::from)
     }
 
-    pub fn list_or_create_default(&self, day: NaiveDate) -> Result<Vec<Meal>, DataError> {
+    pub fn list_or_create_default(&self, day: NaiveDate) -> Result<Vec<Meal>, ServiceError> {
         match self.list(day) {
             Ok(m) => {
                 if m.is_empty() {
@@ -408,7 +408,7 @@ impl MealData {
         }
     }
 
-    pub fn create_default(&self, day: NaiveDate) -> Result<(), DataError> {
+    pub fn create_default(&self, day: NaiveDate) -> Result<(), ServiceError> {
         DEFAULT_MEALS
             .into_iter()
             .enumerate()

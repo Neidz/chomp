@@ -1,13 +1,11 @@
+use chomp_services::CalorieTarget;
 use chrono::NaiveDate;
 use iced::{
     widget::{column, row, Button, Text},
     Element, Length, Task,
 };
 
-use crate::{
-    app::{Context, Message, NextWidget},
-    data::CalorieTarget,
-};
+use crate::app::{Context, Message, NextWidget};
 
 use super::{sidebar::sidebar, InputFormField, InputFormFieldError, Widget};
 
@@ -170,7 +168,7 @@ impl Widget for UpdateCalorieTarget {
                 }
                 UpdateCalorieTargetMessage::Submit => {
                     if let Ok(target) = self.parse() {
-                        if let Err(err) = ctx.data.calorie_target.update(target) {
+                        if let Err(err) = ctx.services.calorie_target.update(target) {
                             tracing::error!("Failed to update calorie target: {}", err);
                             panic!();
                         }

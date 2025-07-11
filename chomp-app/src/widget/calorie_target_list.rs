@@ -1,15 +1,13 @@
+use chomp_services::CalorieTarget;
 use chrono::NaiveDate;
 use iced::{
     widget::{column, row, Button, Container, Scrollable, Text},
     Alignment, Element, Length, Task,
 };
 
-use crate::{
-    app::{Context, Message, NextWidget},
-    data::CalorieTarget,
-};
+use crate::app::{Context, Message, NextWidget};
 
-use super::{sidebar::sidebar, style::TableRowStyle, Widget};
+use super::{sidebar, style::TableRowStyle, Widget};
 
 #[derive(Debug, Clone)]
 pub enum CalorieTargetListMessage {
@@ -34,7 +32,7 @@ impl CalorieTargetList {
     }
 
     fn refresh(&mut self, ctx: &Context) {
-        self.targets = ctx.data.calorie_target.list().unwrap_or_default();
+        self.targets = ctx.services.calorie_target.list().unwrap_or_default();
     }
 }
 
@@ -70,7 +68,7 @@ impl Widget for CalorieTargetList {
                     ctx.next_widget = Some(NextWidget::CreateCalorieTarget);
                 }
                 CalorieTargetListMessage::DeleteTarget(day) => {
-                    if let Err(err) = ctx.data.calorie_target.delete(day) {
+                    if let Err(err) = ctx.services.calorie_target.delete(day) {
                         tracing::error!("Failed to delete calorie target: {}", err);
                         panic!();
                     }

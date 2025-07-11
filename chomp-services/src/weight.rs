@@ -3,7 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 use chrono::NaiveDate;
 use rusqlite::{params, Connection};
 
-use super::DataError;
+use super::ServiceError;
 
 #[derive(Debug, Clone)]
 pub struct Weight {
@@ -17,16 +17,16 @@ impl Weight {
     }
 }
 
-pub struct WeightData {
+pub struct WeightService {
     db: Rc<RefCell<Connection>>,
 }
 
-impl WeightData {
+impl WeightService {
     pub fn new(db: Rc<RefCell<Connection>>) -> Self {
-        WeightData { db }
+        WeightService { db }
     }
 
-    pub fn create(&self, weight: Weight) -> Result<(), DataError> {
+    pub fn create(&self, weight: Weight) -> Result<(), ServiceError> {
         let query = "
             INSERT INTO weights (day, weight)
     	    VALUES (?1, ?2)";
@@ -34,12 +34,12 @@ impl WeightData {
 
         let db = self.db.borrow();
         let mut stmt = db.prepare(query)?;
-        stmt.execute(args).map_err(DataError::from)?;
+        stmt.execute(args).map_err(ServiceError::from)?;
 
         Ok(())
     }
 
-    pub fn update(&self, weight: Weight) -> Result<(), DataError> {
+    pub fn update(&self, weight: Weight) -> Result<(), ServiceError> {
         let query = "
             UPDATE weights
             SET weight=?1
@@ -48,12 +48,12 @@ impl WeightData {
 
         let db = self.db.borrow();
         let mut stmt = db.prepare(query)?;
-        stmt.execute(args).map_err(DataError::from)?;
+        stmt.execute(args).map_err(ServiceError::from)?;
 
         Ok(())
     }
 
-    pub fn read(&self, day: NaiveDate) -> Result<Weight, DataError> {
+    pub fn read(&self, day: NaiveDate) -> Result<Weight, ServiceError> {
         let query = "
             SELECT day, weight
             FROM weights
@@ -69,10 +69,10 @@ impl WeightData {
                 weight: row.get(1)?,
             })
         })
-        .map_err(DataError::from)
+        .map_err(ServiceError::from)
     }
 
-    pub fn delete(&self, day: NaiveDate) -> Result<(), DataError> {
+    pub fn delete(&self, day: NaiveDate) -> Result<(), ServiceError> {
         let query = "
             DELETE FROM weights
     	    WHERE day = ?1";
@@ -80,12 +80,12 @@ impl WeightData {
 
         let db = self.db.borrow();
         let mut stmt = db.prepare(query)?;
-        stmt.execute(args).map_err(DataError::from)?;
+        stmt.execute(args).map_err(ServiceError::from)?;
 
         Ok(())
     }
 
-    pub fn list(&self) -> Result<Vec<Weight>, DataError> {
+    pub fn list(&self) -> Result<Vec<Weight>, ServiceError> {
         let query = "
             SELECT day, weight
             FROM weights
@@ -101,13 +101,17 @@ impl WeightData {
                     weight: row.get(1)?,
                 })
             })
-            .map_err(DataError::from)?
+            .map_err(ServiceError::from)?
             .collect::<Result<Vec<Weight>, _>>()?;
 
         Ok(weights)
     }
 
-    pub fn list_between(&self, start: NaiveDate, end: NaiveDate) -> Result<Vec<Weight>, DataError> {
+    pub fn list_between(
+        &self,
+        start: NaiveDate,
+        end: NaiveDate,
+    ) -> Result<Vec<Weight>, ServiceError> {
         let query = "
             SELECT day, weight
             FROM weights
@@ -128,7 +132,7 @@ impl WeightData {
                     weight: row.get(1)?,
                 })
             })
-            .map_err(DataError::from)?
+            .map_err(ServiceError::from)?
             .collect::<Result<Vec<Weight>, _>>()?;
 
         Ok(weights)

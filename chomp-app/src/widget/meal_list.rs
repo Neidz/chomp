@@ -1,5 +1,9 @@
 use std::collections::HashSet;
 
+use chomp_services::{
+    AddMealProduct, CalorieTarget, Meal, MealDayStats, MealProduct, Product,
+    UpdateMealProductWeight,
+};
 use chrono::{Days, Local, NaiveDate};
 use iced::{
     widget::{
@@ -9,13 +13,7 @@ use iced::{
     Alignment, Element, Length, Task,
 };
 
-use crate::{
-    app::{Context, Message},
-    data::{
-        AddMealProduct, CalorieTarget, Meal, MealDayStats, MealProduct, Product,
-        UpdateMealProductWeight,
-    },
-};
+use crate::app::{Context, Message};
 
 use super::{
     modal::modal, sidebar::sidebar, style::TableRowStyle, InputFormField, InputFormFieldError,
@@ -81,14 +79,14 @@ impl MealList {
     }
 
     fn refresh(&mut self, ctx: &Context) {
-        self.meals = match ctx.data.meal.list_or_create_default(self.day) {
+        self.meals = match ctx.services.meal.list_or_create_default(self.day) {
             Ok(m) => m,
             Err(err) => {
                 tracing::error!("Failed to get list of meals: {}", err);
                 panic!();
             }
         };
-        self.stats = match ctx.data.meal.day_stats(self.day) {
+        self.stats = match ctx.services.meal.day_stats(self.day) {
             Ok(s) => s,
             Err(err) => {
                 tracing::error!("Failed to get day stats: {}", err);
@@ -163,14 +161,14 @@ impl Widget for MealList {
                 }
                 MealListMessage::CreateMealProductFormMeal(meal_id) => match meal_id {
                     Some(id) => {
-                        let meal = match ctx.data.meal.read(id) {
+                        let meal = match ctx.services.meal.read(id) {
                             Ok(m) => m,
                             Err(err) => {
                                 tracing::error!("Failed to get meal: {}", err);
                                 panic!();
                             }
                         };
-                        let products = ctx.data.product.list().unwrap_or_default();
+                        let products = ctx.services.product.list().unwrap_or_default();
                         self.add_meal_product_form = Some(MealProductForm::new(products, &meal));
                     }
                     None => {
@@ -189,7 +187,7 @@ impl Widget for MealList {
                 MealListMessage::SubmitAddMealProductForm => {
                     match self.add_meal_product_form.as_mut().unwrap().parse() {
                         Ok(add_meal_product) => {
-                            if let Err(err) = ctx.data.meal.add_product(add_meal_product) {
+                            if let Err(err) = ctx.services.meal.add_product(add_meal_product) {
                                 tracing::error!("Failed to add product: {}", err);
                                 panic!();
                             }
@@ -204,7 +202,7 @@ impl Widget for MealList {
                 MealListMessage::UpdateMealProductFormMealProduct(meal_product_id) => {
                     match meal_product_id {
                         Some(id) => {
-                            let meal_product = match ctx.data.meal.read_product(id) {
+                            let meal_product = match ctx.services.meal.read_product(id) {
                                 Ok(mp) => mp,
                                 Err(err) => {
                                     tracing::error!("Failed to get meal product: {}", err);
@@ -226,7 +224,7 @@ impl Widget for MealList {
                 MealListMessage::SubmitUpdateMealProductForm => {
                     match self.update_meal_product_form.as_mut().unwrap().parse() {
                         Ok(update_meal_product_weight) => {
-                            ctx.data
+                            ctx.services
                                 .meal
                                 .update_product_weight(update_meal_product_weight)
                                 .unwrap();
@@ -240,7 +238,7 @@ impl Widget for MealList {
                     }
                 }
                 MealListMessage::DeleteMealProduct(meal_product_id) => {
-                    if let Err(err) = ctx.data.meal.delete_product(meal_product_id) {
+                    if let Err(err) = ctx.services.meal.delete_product(meal_product_id) {
                         tracing::error!("Failed to delete meal product: {}", err);
                         panic!();
                     }
@@ -248,7 +246,7 @@ impl Widget for MealList {
                 }
                 MealListMessage::CopyMealProductsMeal(meal_id) => match meal_id {
                     Some(id) => {
-                        let meal = match ctx.data.meal.read(id) {
+                        let meal = match ctx.services.meal.read(id) {
                             Ok(m) => m,
                             Err(err) => {
                                 tracing::error!("Failed to get meal: {}", err);
@@ -257,7 +255,7 @@ impl Widget for MealList {
                         };
                         let prev_day = meal.day.checked_sub_days(Days::new(1)).unwrap();
                         let prev_day_meal =
-                            ctx.data.meal.read_by_day_and_name(prev_day, &meal.name);
+                            ctx.services.meal.read_by_day_and_name(prev_day, &meal.name);
 
                         let meal_products = prev_day_meal.map(|m| m.products).unwrap_or_default();
 
@@ -270,7 +268,7 @@ impl Widget for MealList {
                     let form = self.copy_meal_products_form.as_mut().unwrap();
 
                     let new_products = ctx
-                        .data
+                        .services
                         .meal
                         .read_by_day_and_name(new_day, &form.target_meal.name)
                         .map(|m| m.products)
@@ -283,7 +281,7 @@ impl Widget for MealList {
                     match self.copy_meal_products_form.as_mut().unwrap().parse() {
                         Ok(add_meal_products) => {
                             add_meal_products.into_iter().for_each(|add_meal_product| {
-                                if let Err(err) = ctx.data.meal.add_product(add_meal_product) {
+                                if let Err(err) = ctx.services.meal.add_product(add_meal_product) {
                                     tracing::error!(
                                         "Failed to add meal product while copying meal: {}",
                                         err

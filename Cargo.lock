@@ -528,11 +528,11 @@ name = "chomp-app"
 version = "0.1.0"
 dependencies = [
  "chomp-db",
+ "chomp-services",
  "chrono",
  "csv",
  "iced",
  "rfd",
- "rusqlite",
  "serde",
  "serde_json",
  "tracing",
@@ -544,6 +544,15 @@ name = "chomp-db"
 version = "0.1.0"
 dependencies = [
  "rusqlite",
+]
+
+[[package]]
+name = "chomp-services"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "rusqlite",
+ "serde",
 ]
 
 [[package]]

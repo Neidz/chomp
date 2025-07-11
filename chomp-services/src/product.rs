@@ -3,7 +3,7 @@ use std::{cell::RefCell, fmt, rc::Rc};
 use rusqlite::{params, Connection};
 use serde::Deserialize;
 
-use super::DataError;
+use super::ServiceError;
 
 #[derive(Debug, Clone)]
 pub struct Product {
@@ -32,17 +32,17 @@ pub struct CreateUpdateProduct {
     pub carbohydrates: f32,
 }
 
-pub struct ProductData {
+pub struct ProductService {
     db: Rc<RefCell<Connection>>,
 }
 
 #[allow(unused)]
-impl ProductData {
+impl ProductService {
     pub fn new(db: Rc<RefCell<Connection>>) -> Self {
-        ProductData { db }
+        ProductService { db }
     }
 
-    pub fn create(&self, product: CreateUpdateProduct) -> Result<(), DataError> {
+    pub fn create(&self, product: CreateUpdateProduct) -> Result<(), ServiceError> {
         let query = "
             INSERT INTO products (name, company, calories, fats, proteins, carbohydrates)
     	    VALUES (?1, ?2, ?3, ?4, ?5, ?6)";
@@ -57,12 +57,12 @@ impl ProductData {
 
         let db = self.db.borrow();
         let mut stmt = db.prepare(query)?;
-        stmt.execute(args).map_err(DataError::from)?;
+        stmt.execute(args).map_err(ServiceError::from)?;
 
         Ok(())
     }
 
-    pub fn update(&self, id: usize, product: CreateUpdateProduct) -> Result<(), DataError> {
+    pub fn update(&self, id: usize, product: CreateUpdateProduct) -> Result<(), ServiceError> {
         let query = "
             UPDATE products
             SET name=?1, company=?2, calories=?3, fats=?4, proteins=?5, carbohydrates=?6
@@ -79,12 +79,12 @@ impl ProductData {
 
         let db = self.db.borrow();
         let mut stmt = db.prepare(query)?;
-        stmt.execute(args).map_err(DataError::from)?;
+        stmt.execute(args).map_err(ServiceError::from)?;
 
         Ok(())
     }
 
-    pub fn read(&self, id: usize) -> Result<Product, DataError> {
+    pub fn read(&self, id: usize) -> Result<Product, ServiceError> {
         let query = "
             SELECT id, name, company, calories, fats, proteins, carbohydrates
             FROM products
@@ -105,10 +105,10 @@ impl ProductData {
                 carbohydrates: row.get(6)?,
             })
         })
-        .map_err(DataError::from)
+        .map_err(ServiceError::from)
     }
 
-    pub fn delete(&self, id: usize) -> Result<(), DataError> {
+    pub fn delete(&self, id: usize) -> Result<(), ServiceError> {
         let query = "
             DELETE FROM products
     	    WHERE id = ?1";
@@ -116,12 +116,12 @@ impl ProductData {
 
         let db = self.db.borrow();
         let mut stmt = db.prepare(query)?;
-        stmt.execute(args).map_err(DataError::from)?;
+        stmt.execute(args).map_err(ServiceError::from)?;
 
         Ok(())
     }
 
-    pub fn list(&self) -> Result<Vec<Product>, DataError> {
+    pub fn list(&self) -> Result<Vec<Product>, ServiceError> {
         let query = "
             SELECT id, name, company, calories, fats, proteins, carbohydrates
             FROM products
@@ -142,7 +142,7 @@ impl ProductData {
                     carbohydrates: row.get(6)?,
                 })
             })
-            .map_err(DataError::from)?
+            .map_err(ServiceError::from)?
             .collect::<Result<Vec<Product>, _>>()?;
 
         Ok(products)

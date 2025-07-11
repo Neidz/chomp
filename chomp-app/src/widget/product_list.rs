@@ -1,12 +1,10 @@
+use chomp_services::Product;
 use iced::{
     widget::{column, row, Button, Container, Scrollable, Text},
     Alignment, Element, Length, Task,
 };
 
-use crate::{
-    app::{Context, Message, NextWidget},
-    data::Product,
-};
+use crate::app::{Context, Message, NextWidget};
 
 use super::{sidebar::sidebar, style::TableRowStyle, InputFormField, Widget};
 
@@ -40,7 +38,7 @@ impl ProductList {
     }
 
     fn refresh(&mut self, ctx: &Context) {
-        self.products = ctx.data.product.list().unwrap_or_default();
+        self.products = ctx.services.product.list().unwrap_or_default();
         self.filter();
     }
 
@@ -101,7 +99,7 @@ impl Widget for ProductList {
                     self.filter();
                 }
                 ProductListMessage::DeleteProduct(product_id) => {
-                    if let Err(err) = ctx.data.product.delete(product_id) {
+                    if let Err(err) = ctx.services.product.delete(product_id) {
                         tracing::error!("Failed to delete product: {}", err);
                         panic!();
                     }

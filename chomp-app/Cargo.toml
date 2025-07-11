@@ -5,9 +5,9 @@ edition = "2021"
 
 [dependencies]
 chomp-db = { path = "../chomp-db" }
+chomp-services = { path = "../chomp-services" }
 iced = { version = "0.13.1", features = ["canvas", "tokio"] }
-rusqlite = { workspace = true, features = ["bundled", "chrono"] }
-serde_json = "1"
+serde_json = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 chrono = { workspace = true, features = ["serde"] }
 tracing = "0.1.41"

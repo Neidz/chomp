@@ -1,0 +1,9 @@
+[package]
+name = "chomp-services"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rusqlite = { workspace = true, features = ["bundled", "chrono"] }
+serde = { workspace = true, features = ["derive"] }
+chrono = { workspace = true, features = ["serde"] }

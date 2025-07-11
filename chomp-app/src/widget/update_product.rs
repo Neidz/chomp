@@ -1,12 +1,10 @@
+use chomp_services::{CreateUpdateProduct, Product, ServiceError};
 use iced::{
     widget::{column, row, Button, Text},
     Element, Length, Task,
 };
 
-use crate::{
-    app::{Context, Message, NextWidget},
-    data::{CreateUpdateProduct, DataError, Product},
-};
+use crate::app::{Context, Message, NextWidget};
 
 use super::{sidebar::sidebar, InputFormField, InputFormFieldError, Widget};
 
@@ -200,9 +198,11 @@ impl Widget for UpdateProduct {
                 }
                 UpdateProductMessage::Submit => {
                     if let Ok(product) = self.parse() {
-                        if let Some(err) = ctx.data.product.update(self.product_id, product).err() {
+                        if let Some(err) =
+                            ctx.services.product.update(self.product_id, product).err()
+                        {
                             match err {
-                                DataError::UniqueConstraintViolation(unique_field)
+                                ServiceError::UniqueConstraintViolation(unique_field)
                                     if unique_field == "products.name" =>
                                 {
                                     self.name.error = Some(InputFormFieldError::Custom(

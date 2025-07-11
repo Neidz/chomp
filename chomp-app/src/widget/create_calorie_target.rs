@@ -1,13 +1,11 @@
+use chomp_services::{CalorieTarget, ServiceError};
 use chrono::NaiveDate;
 use iced::{
     widget::{column, row, Button, Text},
     Element, Length, Task,
 };
 
-use crate::{
-    app::{Context, Message, NextWidget},
-    data::{CalorieTarget, DataError},
-};
+use crate::app::{Context, Message, NextWidget};
 
 use super::{sidebar::sidebar, DayFormField, InputFormField, InputFormFieldError, Widget};
 
@@ -183,9 +181,9 @@ impl Widget for CreateCalorieTarget {
                 }
                 CreateCalorieTargetMessage::Submit => {
                     if let Ok(target) = self.parse() {
-                        if let Some(err) = ctx.data.calorie_target.create(target).err() {
+                        if let Some(err) = ctx.services.calorie_target.create(target).err() {
                             match err {
-                                DataError::UniqueConstraintViolation(unique_field)
+                                ServiceError::UniqueConstraintViolation(unique_field)
                                     if unique_field == "calorie_targets.day" =>
                                 {
                                     self.day.error = Some(InputFormFieldError::Custom(

@@ -1,13 +1,11 @@
+use chomp_services::Weight;
 use chrono::NaiveDate;
 use iced::{
     widget::{column, row, Button, Container, Scrollable, Text},
     Alignment, Element, Length, Task,
 };
 
-use crate::{
-    app::{Context, Message, NextWidget},
-    data::Weight,
-};
+use crate::app::{Context, Message, NextWidget};
 
 use super::{sidebar::sidebar, style::TableRowStyle, Widget};
 
@@ -34,7 +32,7 @@ impl WeightList {
     }
 
     fn refresh(&mut self, ctx: &Context) {
-        self.weights = ctx.data.weight.list().unwrap_or_default();
+        self.weights = ctx.services.weight.list().unwrap_or_default();
     }
 }
 
@@ -70,7 +68,7 @@ impl Widget for WeightList {
                     ctx.next_widget = Some(NextWidget::CreateWeight);
                 }
                 WeightListMessage::DeleteWeight(day) => {
-                    if let Err(err) = ctx.data.weight.delete(day) {
+                    if let Err(err) = ctx.services.weight.delete(day) {
                         tracing::error!("Failed to delete weight: {}", err);
                         panic!();
                     }

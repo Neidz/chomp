@@ -1,13 +1,11 @@
+use chomp_services::{ServiceError, Weight};
 use chrono::NaiveDate;
 use iced::{
     widget::{column, row, Button, Text},
     Element, Length, Task,
 };
 
-use crate::{
-    app::{Context, Message, NextWidget},
-    data::{DataError, Weight},
-};
+use crate::app::{Context, Message, NextWidget};
 
 use super::{sidebar::sidebar, DayFormField, InputFormField, InputFormFieldError, Widget};
 
@@ -93,9 +91,9 @@ impl Widget for CreateWeight {
                 }
                 CreateWeightMessage::Submit => {
                     if let Ok(weight) = self.parse() {
-                        if let Some(err) = ctx.data.weight.create(weight).err() {
+                        if let Some(err) = ctx.services.weight.create(weight).err() {
                             match err {
-                                DataError::UniqueConstraintViolation(unique_field)
+                                ServiceError::UniqueConstraintViolation(unique_field)
                                     if unique_field == "weights.day" =>
                                 {
                                     self.day.error = Some(InputFormFieldError::Custom(

@@ -1,29 +1,28 @@
 use rusqlite::{Error as SqliteError, ErrorCode};
 use std::fmt;
 
-#[allow(unused)]
 #[derive(Debug)]
-pub enum DataError {
+pub enum ServiceError {
     UniqueConstraintViolation(String),
     DatabaseError(String),
     NoRows,
     Custom(String),
 }
 
-impl fmt::Display for DataError {
+impl fmt::Display for ServiceError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            DataError::UniqueConstraintViolation(field) => {
+            ServiceError::UniqueConstraintViolation(field) => {
                 write!(f, "unique constraint violation on field: {field}")
             }
-            DataError::DatabaseError(err) => write!(f, "database error: {err}"),
-            DataError::NoRows => write!(f, "query returned no rows"),
-            DataError::Custom(err) => write!(f, "{err}"),
+            ServiceError::DatabaseError(err) => write!(f, "database error: {err}"),
+            ServiceError::NoRows => write!(f, "query returned no rows"),
+            ServiceError::Custom(err) => write!(f, "{err}"),
         }
     }
 }
 
-impl From<SqliteError> for DataError {
+impl From<SqliteError> for ServiceError {
     fn from(err: SqliteError) -> Self {
         match err {
             SqliteError::SqliteFailure(
@@ -39,10 +38,10 @@ impl From<SqliteError> for DataError {
                     .map(|s| s.trim())
                     .unwrap_or(msg.as_str());
 
-                DataError::UniqueConstraintViolation(field.to_string())
+                ServiceError::UniqueConstraintViolation(field.to_string())
             }
 
-            SqliteError::QueryReturnedNoRows => DataError::NoRows,
+            SqliteError::QueryReturnedNoRows => ServiceError::NoRows,
             SqliteError::SqliteFailure(_, Some(msg)) => {
                 if msg.starts_with("UNIQUE constraint failed:") {
                     let field = msg
@@ -51,15 +50,15 @@ impl From<SqliteError> for DataError {
                         .map(|s| s.trim())
                         .unwrap_or(msg.as_str());
 
-                    DataError::UniqueConstraintViolation(field.to_string())
+                    ServiceError::UniqueConstraintViolation(field.to_string())
                 } else {
-                    DataError::DatabaseError(msg)
+                    ServiceError::DatabaseError(msg)
                 }
             }
             SqliteError::SqliteFailure(_, None) => {
-                DataError::DatabaseError("unexpected database error".to_string())
+                ServiceError::DatabaseError("unexpected database error".to_string())
             }
-            _ => DataError::DatabaseError(format!("unexpected SQLite error: {err:?}")),
+            _ => ServiceError::DatabaseError(format!("unexpected SQLite error: {err:?}")),
         }
     }
 }

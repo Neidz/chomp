@@ -1,3 +1,4 @@
+use chomp_services::{CreateUpdateProduct, ServiceError, Weight};
 use std::{
     fs::File,
     path::{Path, PathBuf},
@@ -14,10 +15,7 @@ use iced::{
 use rfd::AsyncFileDialog;
 use serde::Deserialize;
 
-use crate::{
-    app::{Context, Message},
-    data::{CreateUpdateProduct, DataError, Weight},
-};
+use crate::app::{Context, Message};
 
 use super::{sidebar::sidebar, Widget};
 
@@ -142,12 +140,12 @@ fn import_products_data(path: &Path, ctx: &mut Context) {
     let mut failed_to_create = 0;
 
     for product in products {
-        match ctx.data.product.create(product) {
+        match ctx.services.product.create(product) {
             Ok(_) => {
                 created += 1;
             }
             Err(err) => match err {
-                DataError::UniqueConstraintViolation(unique_field)
+                ServiceError::UniqueConstraintViolation(unique_field)
                     if unique_field == "products.name" =>
                 {
                     skipped += 1;
@@ -213,12 +211,12 @@ fn import_fitnotes_weights_data(path: &Path, ctx: &mut Context) {
         found_records += 1;
         let weight = Weight::new(record.date, record.value);
 
-        match ctx.data.weight.create(weight.clone()) {
+        match ctx.services.weight.create(weight.clone()) {
             Ok(_) => {
                 added_records += 1;
             }
             Err(err) => match err {
-                DataError::UniqueConstraintViolation(unique_field)
+                ServiceError::UniqueConstraintViolation(unique_field)
                     if unique_field == "weights.day" =>
                 {
                     skipped_adding_because_of_existing += 1;

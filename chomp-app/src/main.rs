@@ -4,7 +4,6 @@ use iced::{Task, Theme};
 use tracing_subscriber::EnvFilter;
 
 mod app;
-mod data;
 mod widget;
 
 fn main() -> iced::Result {

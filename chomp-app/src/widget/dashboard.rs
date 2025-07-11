@@ -1,3 +1,4 @@
+use chomp_services::Weight;
 use iced::{
     widget::{column, row, Canvas, Text},
     Element,
@@ -5,10 +6,7 @@ use iced::{
     Task,
 };
 
-use crate::{
-    app::{Context, Message},
-    data::Weight,
-};
+use crate::app::{Context, Message};
 
 use super::{line_chart::LineChartEntry, sidebar::sidebar, LineChart, Widget};
 

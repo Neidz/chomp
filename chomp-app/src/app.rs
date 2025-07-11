@@ -1,20 +1,16 @@
+use chomp_services::{Connection, Services};
 use chrono::{Local, Months, NaiveDate};
 use iced::{
     keyboard::{self, Modifiers},
     widget, Element, Subscription, Task,
 };
-use rusqlite::Connection;
 
-use crate::{
-    data::Data,
-    widget::{
-        CalorieTargetList, CalorieTargetListMessage, CreateCalorieTarget,
-        CreateCalorieTargetMessage, CreateProduct, CreateProductMessage, CreateWeight,
-        CreateWeightMessage, Dashboard, DashboardMessage, MealList, MealListMessage, ProductList,
-        ProductListMessage, Tools, ToolsMessage, UpdateCalorieTarget, UpdateCalorieTargetMessage,
-        UpdateProduct, UpdateProductMessage, UpdateWeight, UpdateWeightMessage, WeightList,
-        WeightListMessage, Widget,
-    },
+use crate::widget::{
+    CalorieTargetList, CalorieTargetListMessage, CreateCalorieTarget, CreateCalorieTargetMessage,
+    CreateProduct, CreateProductMessage, CreateWeight, CreateWeightMessage, Dashboard,
+    DashboardMessage, MealList, MealListMessage, ProductList, ProductListMessage, Tools,
+    ToolsMessage, UpdateCalorieTarget, UpdateCalorieTargetMessage, UpdateProduct,
+    UpdateProductMessage, UpdateWeight, UpdateWeightMessage, WeightList, WeightListMessage, Widget,
 };
 
 #[derive(Debug, Clone)]
@@ -54,7 +50,7 @@ pub enum Message {
 }
 
 pub struct Context {
-    pub data: Data,
+    pub services: Services,
     pub next_widget: Option<NextWidget>,
 }
 
@@ -65,21 +61,21 @@ pub struct App {
 
 impl App {
     pub fn new(db: Connection) -> Self {
-        let data = Data::new(db);
+        let services = Services::new(db);
 
         let weights_end = Local::now().date_naive();
         let weights_start = Local::now()
             .checked_sub_months(Months::new(1))
             .unwrap()
             .date_naive();
-        let weights = data
+        let weights = services
             .weight
             .list_between(weights_start, weights_end)
             .unwrap_or_default();
 
         App {
             ctx: Context {
-                data,
+                services,
                 next_widget: None,
             },
             active_widget: Box::new(Dashboard::new(weights)),
@@ -107,14 +103,14 @@ impl App {
                         .date_naive();
                     let weights = self
                         .ctx
-                        .data
+                        .services
                         .weight
                         .list_between(start, end)
                         .unwrap_or_default();
                     Box::new(Dashboard::new(weights))
                 }
                 NextWidget::ProductList => {
-                    let products = match self.ctx.data.product.list() {
+                    let products = match self.ctx.services.product.list() {
                         Ok(p) => p,
                         Err(err) => {
                             tracing::error!("Failed to get product list: {}", err);
@@ -125,7 +121,7 @@ impl App {
                 }
                 NextWidget::CreateProduct => Box::new(CreateProduct::new()),
                 NextWidget::UpdateProduct(id) => {
-                    let product = match self.ctx.data.product.read(id) {
+                    let product = match self.ctx.services.product.read(id) {
                         Ok(p) => p,
                         Err(err) => {
                             tracing::error!("Failed to get product by id: {}", err);
@@ -135,12 +131,12 @@ impl App {
                     Box::new(UpdateProduct::new(product))
                 }
                 NextWidget::WeightList => {
-                    let weights = self.ctx.data.weight.list().unwrap_or_default();
+                    let weights = self.ctx.services.weight.list().unwrap_or_default();
                     Box::new(WeightList::new(weights))
                 }
                 NextWidget::CreateWeight => Box::new(CreateWeight::new()),
                 NextWidget::UpdateWeight(day) => {
-                    let weight = match self.ctx.data.weight.read(day) {
+                    let weight = match self.ctx.services.weight.read(day) {
                         Ok(w) => w,
                         Err(err) => {
                             tracing::error!("Failed to read weight: {}", err);
@@ -151,21 +147,26 @@ impl App {
                 }
                 NextWidget::MealList => {
                     let day = Local::now().date_naive();
-                    let meals = match self.ctx.data.meal.list_or_create_default(day) {
+                    let meals = match self.ctx.services.meal.list_or_create_default(day) {
                         Ok(m) => m,
                         Err(err) => {
                             tracing::error!("Failed to get meals or create default: {}", err);
                             panic!()
                         }
                     };
-                    let stats = match self.ctx.data.meal.day_stats(day) {
+                    let stats = match self.ctx.services.meal.day_stats(day) {
                         Ok(s) => s,
                         Err(err) => {
                             tracing::error!("Failed to get meal stats: {}", err);
                             panic!()
                         }
                     };
-                    let target = match self.ctx.data.calorie_target.read_last_or_create_default() {
+                    let target = match self
+                        .ctx
+                        .services
+                        .calorie_target
+                        .read_last_or_create_default()
+                    {
                         Ok(t) => t,
                         Err(err) => {
                             tracing::error!("Failed to get calorie target: {}", err);
@@ -175,12 +176,12 @@ impl App {
                     Box::new(MealList::new(day, meals, stats, target))
                 }
                 NextWidget::CalorieTargetList => {
-                    let targets = self.ctx.data.calorie_target.list().unwrap_or_default();
+                    let targets = self.ctx.services.calorie_target.list().unwrap_or_default();
                     Box::new(CalorieTargetList::new(targets))
                 }
                 NextWidget::CreateCalorieTarget => Box::new(CreateCalorieTarget::new()),
                 NextWidget::UpdateCalorieTarget(day) => {
-                    let target = match self.ctx.data.calorie_target.read(day) {
+                    let target = match self.ctx.services.calorie_target.read(day) {
                         Ok(t) => t,
                         Err(err) => {
                             tracing::error!("Failed to read calorie target: {}", err);
