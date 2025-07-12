@@ -9,7 +9,12 @@ pub fn modal<'a>(
     view: Element<'a, Message>,
     modal_view: Element<'a, Message>,
     on_blur: Message,
+    modal_active: bool,
 ) -> Element<'a, Message> {
+    if !modal_active {
+        return view;
+    }
+
     stack![
         view,
         opaque(

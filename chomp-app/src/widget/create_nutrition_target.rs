@@ -1,5 +1,4 @@
 use chomp_services::{NutritionTarget, ServiceError};
-use chrono::NaiveDate;
 use iced::{
     widget::{column, row, Button, Text},
     Element, Length, Task,
@@ -7,11 +6,10 @@ use iced::{
 
 use crate::app::{Context, Message, NextWidget};
 
-use super::{sidebar::sidebar, DayFormField, InputFormField, InputFormFieldError, Widget};
+use super::{modal, sidebar, DatePicker, InputFormField, InputFormFieldError, Widget};
 
 #[derive(Debug, Clone)]
 pub enum CreateNutritionTargetMessage {
-    UpdateDay(NaiveDate),
     UpdateCalories(String),
     UpdateFats(String),
     UpdateProteins(String),
@@ -27,7 +25,7 @@ impl From<CreateNutritionTargetMessage> for Message {
 
 #[derive(Debug)]
 pub struct CreateNutritionTarget {
-    day: DayFormField,
+    day: DatePicker,
     calories: InputFormField<f32>,
     fats: InputFormField<f32>,
     proteins: InputFormField<f32>,
@@ -37,7 +35,7 @@ pub struct CreateNutritionTarget {
 impl CreateNutritionTarget {
     pub fn new() -> Self {
         CreateNutritionTarget {
-            day: DayFormField::new("Date*"),
+            day: DatePicker::new("Date*"),
             calories: InputFormField::new("Calories* (kcal/day)", "2500.0"),
             fats: InputFormField::new_with_raw_value("Fats* (%)", "20.0", "20"),
             proteins: InputFormField::new_with_raw_value("Proteins* (%)", "30.0", "30"),
@@ -122,7 +120,7 @@ impl CreateNutritionTarget {
         let carbohydrates = carbohydrates_percentage / 100.0 * calories / 4.0;
 
         Ok(NutritionTarget {
-            day: self.day.value,
+            day: self.day.value(),
             calories,
             fats,
             proteins,
@@ -134,8 +132,7 @@ impl CreateNutritionTarget {
 impl Widget for CreateNutritionTarget {
     fn view(&self) -> Element<Message> {
         let form = column![
-            self.day
-                .view(|d| { CreateNutritionTargetMessage::UpdateDay(d).into() }),
+            self.day.view(),
             self.calories
                 .view(|c| { CreateNutritionTargetMessage::UpdateCalories(c).into() }),
             self.fats
@@ -154,19 +151,25 @@ impl Widget for CreateNutritionTarget {
         ]
         .spacing(10);
 
-        row![sidebar(), content]
+        let content_with_sidebar = row![sidebar(), content]
             .height(Length::Fill)
             .padding(20)
-            .spacing(20)
-            .into()
+            .spacing(20);
+
+        return modal(
+            content_with_sidebar.into(),
+            self.day.view_modal(),
+            Message::CloseDatePicker.into(),
+            self.day.calendar_open(),
+        )
+        .into();
     }
 
     fn update(&mut self, ctx: &mut Context, msg: Message) -> Task<Message> {
+        self.day.handle_message(msg.clone());
+
         if let Message::CreateNutritionTarget(msg) = msg {
             match msg {
-                CreateNutritionTargetMessage::UpdateDay(day) => {
-                    self.day.value = day;
-                }
                 CreateNutritionTargetMessage::UpdateCalories(raw_calories) => {
                     self.calories.raw_input = raw_calories;
                 }

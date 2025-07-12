@@ -4,7 +4,7 @@ use chomp_services::{
     AddMealProduct, Meal, MealDayStats, MealProduct, NutritionTarget, Product,
     UpdateMealProductWeight,
 };
-use chrono::{Days, Local, NaiveDate};
+use chrono::{Days, NaiveDate};
 use iced::{
     widget::{
         button, column, combo_box, container, horizontal_space, progress_bar, row, vertical_space,
@@ -16,15 +16,11 @@ use iced::{
 use crate::app::{Context, Message};
 
 use super::{
-    modal::modal, sidebar::sidebar, style::TableRowStyle, InputFormField, InputFormFieldError,
-    Widget,
+    modal, sidebar, style::TableRowStyle, DatePicker, InputFormField, InputFormFieldError, Widget,
 };
 
 #[derive(Debug, Clone)]
 pub enum MealListMessage {
-    NextDay,
-    PrevDay,
-
     CreateMealProductFormMeal(Option<usize>),
     CreateMealProductFormWeight(String),
     CreateMealProductFormProduct(usize),
@@ -37,7 +33,6 @@ pub enum MealListMessage {
     DeleteMealProduct(usize),
 
     CopyMealProductsMeal(Option<usize>),
-    CopyMealProductsFromDay(NaiveDate),
     SubmitCopyMealProductsForm,
 }
 
@@ -49,7 +44,7 @@ impl From<MealListMessage> for Message {
 
 #[derive(Debug)]
 pub struct MealList {
-    day: NaiveDate,
+    day: DatePicker,
     meals: Vec<Meal>,
     stats: MealDayStats,
     target: NutritionTarget,
@@ -68,7 +63,7 @@ impl MealList {
     ) -> Self {
         assert!(!meals.is_empty());
         MealList {
-            day,
+            day: DatePicker::new_with_value("Date", &day),
             meals,
             stats,
             target,
@@ -79,14 +74,14 @@ impl MealList {
     }
 
     fn refresh(&mut self, ctx: &Context) {
-        self.meals = match ctx.services.meal.list_or_create_default(self.day) {
+        self.meals = match ctx.services.meal.list_or_create_default(self.day.value()) {
             Ok(m) => m,
             Err(err) => {
                 tracing::error!("Failed to get list of meals: {}", err);
                 std::process::exit(1);
             }
         };
-        self.stats = match ctx.services.meal.day_stats(self.day) {
+        self.stats = match ctx.services.meal.day_stats(self.day.value()) {
             Ok(s) => s,
             Err(err) => {
                 tracing::error!("Failed to get day stats: {}", err);
@@ -107,7 +102,7 @@ impl Widget for MealList {
             row![
                 Text::new("Meals").size(40),
                 horizontal_space(),
-                day_changer(self.day)
+                self.day.view(),
             ]
             .align_y(Alignment::Center),
             Scrollable::new(tables),
@@ -126,6 +121,7 @@ impl Widget for MealList {
                 content_with_sidebar.into(),
                 render_add_product_to_meal_form(add_form),
                 MealListMessage::CreateMealProductFormMeal(None).into(),
+                true,
             );
         }
 
@@ -134,31 +130,57 @@ impl Widget for MealList {
                 content_with_sidebar.into(),
                 render_update_meal_product_form(update_form),
                 MealListMessage::UpdateMealProductFormMealProduct(None).into(),
+                true,
             );
         }
 
         if let Some(copy_form) = &self.copy_meal_products_form {
             return modal(
-                content_with_sidebar.into(),
-                render_copy_meal_products_form(copy_form),
-                MealListMessage::CopyMealProductsMeal(None).into(),
+                modal(
+                    content_with_sidebar.into(),
+                    render_copy_meal_products_form(copy_form),
+                    MealListMessage::CopyMealProductsMeal(None).into(),
+                    true,
+                ),
+                self.day.view_modal(),
+                Message::CloseDatePicker.into(),
+                self.day.calendar_open(),
             );
         }
 
-        content_with_sidebar.into()
+        modal(
+            content_with_sidebar.into(),
+            self.day.view_modal(),
+            Message::CloseDatePicker.into(),
+            self.day.calendar_open(),
+        )
     }
 
     fn update(&mut self, ctx: &mut Context, msg: Message) -> Task<Message> {
+        if let Some(form) = self.copy_meal_products_form.as_mut() {
+            form.from_day.handle_message(msg.clone());
+        } else {
+            self.day.handle_message(msg.clone());
+        }
+
         match msg {
+            Message::DatePickerDateChange(new_day) => {
+                if let Some(form) = self.copy_meal_products_form.as_mut() {
+                    let new_products = ctx
+                        .services
+                        .meal
+                        .read_by_day_and_name(new_day, &form.target_meal.name)
+                        .map(|m| m.products)
+                        .unwrap_or_default();
+
+                    form.meal_products = new_products;
+                } else if self.add_meal_product_form.is_none()
+                    && self.update_meal_product_form.is_none()
+                {
+                    self.refresh(ctx);
+                };
+            }
             Message::MealList(msg) => match msg {
-                MealListMessage::NextDay => {
-                    self.day = self.day.checked_add_days(Days::new(1)).unwrap();
-                    self.refresh(ctx);
-                }
-                MealListMessage::PrevDay => {
-                    self.day = self.day.checked_sub_days(Days::new(1)).unwrap();
-                    self.refresh(ctx);
-                }
                 MealListMessage::CreateMealProductFormMeal(meal_id) => match meal_id {
                     Some(id) => {
                         let meal = match ctx.services.meal.read(id) {
@@ -264,19 +286,6 @@ impl Widget for MealList {
                     }
                     None => self.copy_meal_products_form = None,
                 },
-                MealListMessage::CopyMealProductsFromDay(new_day) => {
-                    let form = self.copy_meal_products_form.as_mut().unwrap();
-
-                    let new_products = ctx
-                        .services
-                        .meal
-                        .read_by_day_and_name(new_day, &form.target_meal.name)
-                        .map(|m| m.products)
-                        .unwrap_or_default();
-
-                    form.from_day = new_day;
-                    form.meal_products = new_products;
-                }
                 MealListMessage::SubmitCopyMealProductsForm => {
                     match self.copy_meal_products_form.as_mut().unwrap().parse() {
                         Ok(add_meal_products) => {
@@ -311,31 +320,6 @@ impl Widget for MealList {
 
         Task::none()
     }
-}
-
-fn day_changer(day: NaiveDate) -> Element<'static, Message> {
-    let today = Local::now().date_naive();
-    let tomorrow = today.checked_add_days(Days::new(1)).unwrap();
-    let yesterday = today.checked_sub_days(Days::new(1)).unwrap();
-
-    let formatted_day = match day {
-        d if d == today => "Today".to_string(),
-        d if d == tomorrow => "Tomorrow".to_string(),
-        d if d == yesterday => "Yesterday".to_string(),
-        _ => day.format("%Y-%m-%d").to_string(),
-    };
-
-    row![
-        Button::new("<").on_press(MealListMessage::PrevDay.into()),
-        horizontal_space(),
-        Text::new(formatted_day).size(20),
-        horizontal_space(),
-        Button::new(">").on_press(MealListMessage::NextDay.into()),
-    ]
-    .align_y(Alignment::Center)
-    .width(220)
-    .spacing(10)
-    .into()
 }
 
 fn render_meal(meal: &Meal) -> Element<Message> {
@@ -626,7 +610,7 @@ pub fn render_update_meal_product_form(form: &UpdateMealProductForm) -> Element<
 pub struct CopyMealProductsForm {
     pub target_meal: Meal,
     pub meal_products: Vec<MealProduct>,
-    pub from_day: NaiveDate,
+    pub from_day: DatePicker,
 }
 
 impl CopyMealProductsForm {
@@ -634,7 +618,7 @@ impl CopyMealProductsForm {
         CopyMealProductsForm {
             target_meal: to_meal.to_owned(),
             meal_products: meal_products.to_owned(),
-            from_day: from_day.to_owned(),
+            from_day: DatePicker::new_with_value("From date", from_day),
         }
     }
 
@@ -652,55 +636,15 @@ impl CopyMealProductsForm {
 }
 
 pub fn render_copy_meal_products_form(form: &CopyMealProductsForm) -> Element<Message> {
-    let today = Local::now().date_naive();
-    let tomorrow = today.checked_add_days(Days::new(1)).unwrap();
-    let yesterday = today.checked_sub_days(Days::new(1)).unwrap();
-
-    let formatted_from_day = match form.from_day {
-        d if d == today => "Today".to_string(),
-        d if d == tomorrow => "Tomorrow".to_string(),
-        d if d == yesterday => "Yesterday".to_string(),
-        d => d.format("%Y-%m-%d").to_string(),
-    };
-
-    let formatted_target_day = match form.target_meal.day {
-        d if d == today => "Today".to_string(),
-        d if d == tomorrow => "Tomorrow".to_string(),
-        d if d == yesterday => "Yesterday".to_string(),
-        d => d.format("%Y-%m-%d").to_string(),
-    };
-
-    let day_row = row![
-        Button::new("<").on_press(
-            MealListMessage::CopyMealProductsFromDay(
-                form.from_day.checked_sub_days(Days::new(1)).unwrap()
-            )
-            .into()
-        ),
-        horizontal_space(),
-        Text::new(formatted_from_day.clone()).size(20),
-        horizontal_space(),
-        Button::new(">").on_press(
-            MealListMessage::CopyMealProductsFromDay(
-                form.from_day.checked_add_days(Days::new(1)).unwrap()
-            )
-            .into()
-        ),
-    ]
-    .align_y(Alignment::Center)
-    .width(Length::Fill)
-    .spacing(10);
-
     container(
         column![
             Text::new(format!(
-                "Copy {} products to {} {}",
+                "Copy {} products to {}",
                 form.meal_products.len(),
-                formatted_target_day,
                 form.target_meal.name
             ))
             .size(30),
-            day_row,
+            form.from_day.view(),
             Button::new("Copy Meal")
                 .width(Length::Fill)
                 .on_press(MealListMessage::SubmitCopyMealProductsForm.into()),

@@ -1,9 +1,8 @@
 use std::fmt::{self};
 
-use chrono::{Days, Local, NaiveDate};
 use iced::{
-    widget::{column, horizontal_space, row, Button, Text, TextInput},
-    Alignment, Color, Element,
+    widget::{column, Text, TextInput},
+    Color, Element,
 };
 
 use crate::app::Message;
@@ -94,62 +93,6 @@ impl<T> InputFormField<T> {
             TextInput::new(&self.placeholder, &self.raw_input).on_input(handle_message)
         ]
         .spacing(2);
-
-        if let Some(err) = &self.error {
-            column = column.push(Text::new(err.to_string()).color(Color::from_rgb(1.0, 0.0, 0.0)));
-        }
-
-        column.into()
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct DayFormField {
-    pub name: String,
-    pub value: NaiveDate,
-    pub error: Option<InputFormFieldError>,
-}
-
-impl DayFormField {
-    pub fn new(name: &str) -> Self {
-        DayFormField {
-            name: name.to_string(),
-            value: Local::now().date_naive(),
-            error: None,
-        }
-    }
-
-    pub fn view<F>(&self, day_change_message: F) -> Element<Message>
-    where
-        F: Fn(NaiveDate) -> Message + 'static,
-    {
-        let today = Local::now().date_naive();
-        let tomorrow = today.checked_add_days(Days::new(1)).unwrap();
-        let yesterday = today.checked_sub_days(Days::new(1)).unwrap();
-
-        let formatted_day = match self.value {
-            d if d == today => "Today".to_string(),
-            d if d == tomorrow => "Tomorrow".to_string(),
-            d if d == yesterday => "Yesterday".to_string(),
-            _ => self.value.format("%Y-%m-%d").to_string(),
-        };
-
-        let day_row = row![
-            Button::new("<").on_press(day_change_message(
-                self.value.checked_sub_days(Days::new(1)).unwrap()
-            )),
-            horizontal_space(),
-            Text::new(formatted_day).size(20),
-            horizontal_space(),
-            Button::new(">").on_press(day_change_message(
-                self.value.checked_add_days(Days::new(1)).unwrap()
-            )),
-        ]
-        .align_y(Alignment::Center)
-        .width(220)
-        .spacing(10);
-
-        let mut column = column![Text::new(&self.name), day_row].spacing(2);
 
         if let Some(err) = &self.error {
             column = column.push(Text::new(err.to_string()).color(Color::from_rgb(1.0, 0.0, 0.0)));

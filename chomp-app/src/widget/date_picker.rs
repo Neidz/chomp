@@ -3,7 +3,7 @@ use std::fmt::Display;
 use chrono::{Datelike, Days, Local, Month, NaiveDate};
 use iced::{
     widget::{button, column, container, horizontal_space, pick_list, row, Button, Row, Text},
-    Alignment, Color, Element, Length,
+    Color, Element, Length,
 };
 
 use crate::{app::Message, widget::form_field::InputFormFieldError};
@@ -42,8 +42,8 @@ impl CalendarState {
 
 #[derive(Debug, Clone)]
 pub struct DatePicker {
-    pub name: String,
-    pub value: NaiveDate,
+    name: String,
+    value: NaiveDate,
     pub error: Option<InputFormFieldError>,
     calendar_state: Option<CalendarState>,
 }
@@ -58,10 +58,16 @@ impl DatePicker {
         }
     }
 
-    pub fn view<F>(&self, day_change_message: F) -> Element<Message>
-    where
-        F: Fn(NaiveDate) -> Message + 'static,
-    {
+    pub fn new_with_value(name: &str, date: &NaiveDate) -> Self {
+        DatePicker {
+            name: name.to_string(),
+            value: date.to_owned(),
+            error: None,
+            calendar_state: None,
+        }
+    }
+
+    pub fn view(&self) -> Element<Message> {
         let today = Local::now().date_naive();
         let tomorrow = today.checked_add_days(Days::new(1)).unwrap();
         let yesterday = today.checked_sub_days(Days::new(1)).unwrap();
@@ -73,22 +79,11 @@ impl DatePicker {
             _ => self.value.format("%Y-%m-%d").to_string(),
         };
 
-        let day_row = row![
-            Button::new("<").on_press(day_change_message(
-                self.value.checked_sub_days(Days::new(1)).unwrap()
-            )),
-            horizontal_space(),
+        let mut column = column![
+            Text::new(&self.name),
             Button::new(Text::new(formatted_day)).on_press(Message::OpenDatePicker),
-            horizontal_space(),
-            Button::new(">").on_press(day_change_message(
-                self.value.checked_add_days(Days::new(1)).unwrap()
-            )),
         ]
-        .align_y(Alignment::Center)
-        .width(200)
-        .spacing(SPACING);
-
-        let mut column = column![Text::new(&self.name), day_row].spacing(2);
+        .spacing(2);
 
         if let Some(err) = &self.error {
             column = column.push(Text::new(err.to_string()).color(Color::from_rgb(1.0, 0.0, 0.0)));
@@ -97,13 +92,10 @@ impl DatePicker {
         column.into()
     }
 
-    pub fn view_modal<F>(&self, day_change_message: F) -> Element<Message>
-    where
-        F: Fn(NaiveDate) -> Message + 'static,
-    {
+    pub fn view_modal(&self) -> Element<Message> {
         let calendar_state = match self.calendar_state.as_ref() {
             Some(cs) => cs,
-            None => unreachable!(),
+            None => return row![].into(),
         };
 
         let month_select = pick_list(
@@ -168,7 +160,7 @@ impl DatePicker {
                 let button = Button::new(Text::new(day.day0() + 1).center())
                     .width(CALENDAR_ITEM_WIDTH)
                     .style(style)
-                    .on_press(day_change_message(day.to_owned()));
+                    .on_press(Message::DatePickerDateChange(day.to_owned()));
 
                 row = row.push(button);
             }
@@ -203,6 +195,10 @@ impl DatePicker {
             Message::CloseDatePicker => self.calendar_state = None,
             _ => {}
         }
+    }
+
+    pub fn value(&self) -> NaiveDate {
+        self.value
     }
 
     pub fn calendar_open(&self) -> bool {

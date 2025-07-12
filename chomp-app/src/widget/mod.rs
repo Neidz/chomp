@@ -30,6 +30,7 @@ use date_picker::*;
 use form_field::*;
 use line_chart::*;
 pub use meal_list::*;
+use modal::*;
 pub use nutrition_target_list::*;
 pub use product_list::*;
 use sidebar::*;

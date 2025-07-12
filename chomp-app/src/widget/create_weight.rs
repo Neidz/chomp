@@ -1,5 +1,4 @@
 use chomp_services::{ServiceError, Weight};
-use chrono::NaiveDate;
 use iced::{
     widget::{column, row, Button, Text},
     Element, Length, Task,
@@ -7,11 +6,10 @@ use iced::{
 
 use crate::app::{Context, Message, NextWidget};
 
-use super::{sidebar::sidebar, DayFormField, InputFormField, InputFormFieldError, Widget};
+use super::{modal, sidebar, DatePicker, InputFormField, InputFormFieldError, Widget};
 
 #[derive(Debug, Clone)]
 pub enum CreateWeightMessage {
-    UpdateDay(NaiveDate),
     UpdateWeight(String),
     Submit,
 }
@@ -24,14 +22,14 @@ impl From<CreateWeightMessage> for Message {
 
 #[derive(Debug)]
 pub struct CreateWeight {
-    day: DayFormField,
+    day: DatePicker,
     weight: InputFormField<f32>,
 }
 
 impl CreateWeight {
     pub fn new() -> Self {
         CreateWeight {
-            day: DayFormField::new("Date*"),
+            day: DatePicker::new("Date*"),
             weight: InputFormField::new("Weight* (g)", "80.1"),
         }
     }
@@ -50,7 +48,7 @@ impl CreateWeight {
         });
 
         Ok(Weight {
-            day: self.day.value,
+            day: self.day.value(),
             weight: self.weight.value.ok_or("validation failed")?,
         })
     }
@@ -59,8 +57,7 @@ impl CreateWeight {
 impl Widget for CreateWeight {
     fn view(&self) -> Element<Message> {
         let form = column![
-            self.day
-                .view(|d| { CreateWeightMessage::UpdateDay(d).into() }),
+            self.day.view(),
             self.weight
                 .view(|w| { CreateWeightMessage::UpdateWeight(w).into() }),
         ]
@@ -73,19 +70,25 @@ impl Widget for CreateWeight {
         ]
         .spacing(10);
 
-        row![sidebar(), content]
+        let content_with_sidebar = row![sidebar(), content]
             .height(Length::Fill)
             .padding(20)
-            .spacing(20)
-            .into()
+            .spacing(20);
+
+        return modal(
+            content_with_sidebar.into(),
+            self.day.view_modal(),
+            Message::CloseDatePicker.into(),
+            self.day.calendar_open(),
+        )
+        .into();
     }
 
     fn update(&mut self, ctx: &mut Context, msg: Message) -> Task<Message> {
+        self.day.handle_message(msg.clone());
+
         if let Message::CreateWeight(msg) = msg {
             match msg {
-                CreateWeightMessage::UpdateDay(day) => {
-                    self.day.value = day;
-                }
                 CreateWeightMessage::UpdateWeight(raw_weight) => {
                     self.weight.raw_input = raw_weight;
                 }
