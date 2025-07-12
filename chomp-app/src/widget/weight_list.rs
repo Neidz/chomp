@@ -1,7 +1,7 @@
 use chomp_services::Weight;
 use chrono::NaiveDate;
 use iced::{
-    widget::{column, row, Button, Container, Scrollable, Text},
+    widget::{button, column, row, Button, Container, Scrollable, Text},
     Alignment, Element, Length, Task,
 };
 
@@ -99,7 +99,9 @@ fn list_row(w: &Weight, even: bool) -> Element<Message> {
         Text::new(format!("{:.1}", w.weight)).width(Length::Fill),
         row![
             Button::new("Update").on_press(Message::ChangeWidget(NextWidget::UpdateWeight(w.day))),
-            Button::new("Delete").on_press(WeightListMessage::DeleteWeight(w.day).into())
+            Button::new("Delete")
+                .style(button::danger)
+                .on_press(WeightListMessage::DeleteWeight(w.day).into())
         ]
         .spacing(10)
         .width(Length::Fill)

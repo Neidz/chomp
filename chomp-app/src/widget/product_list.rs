@@ -1,6 +1,6 @@
 use chomp_services::Product;
 use iced::{
-    widget::{column, row, Button, Container, Scrollable, Text},
+    widget::{button, column, row, Button, Container, Scrollable, Text},
     Alignment, Element, Length, Task,
 };
 
@@ -140,7 +140,9 @@ fn list_row(p: &Product, even: bool) -> Element<Message> {
         Text::new(format!("{:.1}", p.carbohydrates)).width(Length::Fill),
         row![
             Button::new("Update").on_press(Message::ChangeWidget(NextWidget::UpdateProduct(p.id))),
-            Button::new("Delete").on_press(ProductListMessage::DeleteProduct(p.id).into())
+            Button::new("Delete")
+                .style(button::danger)
+                .on_press(ProductListMessage::DeleteProduct(p.id).into())
         ]
         .spacing(10)
         .width(Length::Fill)

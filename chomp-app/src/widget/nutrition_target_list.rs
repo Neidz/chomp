@@ -1,7 +1,7 @@
 use chomp_services::NutritionTarget;
 use chrono::NaiveDate;
 use iced::{
-    widget::{column, row, Button, Container, Scrollable, Text},
+    widget::{button, column, row, Button, Container, Scrollable, Text},
     Alignment, Element, Length, Task,
 };
 
@@ -107,7 +107,9 @@ fn list_row(t: &NutritionTarget, even: bool) -> Element<Message> {
             Button::new("Update").on_press(Message::ChangeWidget(
                 NextWidget::UpdateNutritionTarget(t.day)
             )),
-            Button::new("Delete").on_press(NutritionTargetListMessage::DeleteTarget(t.day).into())
+            Button::new("Delete")
+                .style(button::danger)
+                .on_press(NutritionTargetListMessage::DeleteTarget(t.day).into())
         ]
         .spacing(10)
         .width(Length::Fill)

@@ -7,8 +7,8 @@ use chomp_services::{
 use chrono::{Days, Local, NaiveDate};
 use iced::{
     widget::{
-        column, combo_box, container, horizontal_space, progress_bar, row, vertical_space, Button,
-        Container, Scrollable, Text,
+        button, column, combo_box, container, horizontal_space, progress_bar, row, vertical_space,
+        Button, Container, Scrollable, Text,
     },
     Alignment, Element, Length, Task,
 };
@@ -404,7 +404,9 @@ fn list_row(mp: &MealProduct, even: bool) -> Element<Message> {
         row![
             Button::new("Update")
                 .on_press(MealListMessage::UpdateMealProductFormMealProduct(Some(mp.id)).into()),
-            Button::new("Delete").on_press(MealListMessage::DeleteMealProduct(mp.id).into())
+            Button::new("Delete")
+                .style(button::danger)
+                .on_press(MealListMessage::DeleteMealProduct(mp.id).into())
         ]
         .spacing(10)
         .width(Length::Fill)
