@@ -143,7 +143,7 @@ impl Widget for MealList {
                     true,
                 ),
                 self.day.view_modal(),
-                Message::CloseDatePicker.into(),
+                Message::CloseDatePicker,
                 self.day.calendar_open(),
             );
         }
@@ -151,7 +151,7 @@ impl Widget for MealList {
         modal(
             content_with_sidebar.into(),
             self.day.view_modal(),
-            Message::CloseDatePicker.into(),
+            Message::CloseDatePicker,
             self.day.calendar_open(),
         )
     }

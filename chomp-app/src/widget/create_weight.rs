@@ -75,13 +75,12 @@ impl Widget for CreateWeight {
             .padding(20)
             .spacing(20);
 
-        return modal(
+        modal(
             content_with_sidebar.into(),
             self.day.view_modal(),
-            Message::CloseDatePicker.into(),
+            Message::CloseDatePicker,
             self.day.calendar_open(),
         )
-        .into();
     }
 
     fn update(&mut self, ctx: &mut Context, msg: Message) -> Task<Message> {

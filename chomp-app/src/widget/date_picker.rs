@@ -101,7 +101,7 @@ impl DatePicker {
         let month_select = pick_list(
             CalendarMonth::all_months(),
             calendar_state.month.clone(),
-            |month| Message::DatePickerMonthChange(month),
+            Message::DatePickerMonthChange,
         );
 
         let current_year = Local::now().year();
@@ -133,7 +133,6 @@ impl DatePicker {
             .unwrap();
 
         let days_in_calendar: Vec<NaiveDate> = (0..AMOUNT_OF_ITEMS_IN_CALENDAR)
-            .into_iter()
             .map(|amount_of_days| {
                 first_day_in_calendar
                     .checked_add_days(Days::new(amount_of_days as u64))
