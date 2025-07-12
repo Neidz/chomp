@@ -6,11 +6,12 @@ use iced::{
 };
 
 use crate::widget::{
-    CreateNutritionTarget, CreateNutritionTargetMessage, CreateProduct, CreateProductMessage,
-    CreateWeight, CreateWeightMessage, Dashboard, DashboardMessage, MealList, MealListMessage,
-    NutritionTargetList, NutritionTargetListMessage, ProductList, ProductListMessage, Tools,
-    ToolsMessage, UpdateNutritionTarget, UpdateNutritionTargetMessage, UpdateProduct,
-    UpdateProductMessage, UpdateWeight, UpdateWeightMessage, WeightList, WeightListMessage, Widget,
+    CalendarMonth, CreateNutritionTarget, CreateNutritionTargetMessage, CreateProduct,
+    CreateProductMessage, CreateWeight, CreateWeightMessage, Dashboard, DashboardMessage, MealList,
+    MealListMessage, NutritionTargetList, NutritionTargetListMessage, ProductList,
+    ProductListMessage, Tools, ToolsMessage, UpdateNutritionTarget, UpdateNutritionTargetMessage,
+    UpdateProduct, UpdateProductMessage, UpdateWeight, UpdateWeightMessage, WeightList,
+    WeightListMessage, Widget,
 };
 
 #[derive(Debug, Clone)]
@@ -31,6 +32,11 @@ pub enum NextWidget {
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    DatePickerDateChange(NaiveDate),
+    DatePickerYearChange(i32),
+    DatePickerMonthChange(CalendarMonth),
+    OpenDatePicker,
+    CloseDatePicker,
     TabClicked,
     ShiftTabClicked,
     EscapeClicked,

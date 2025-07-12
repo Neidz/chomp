@@ -6,7 +6,10 @@ use iced::{
     Task,
 };
 
-use crate::app::{Context, Message};
+use crate::{
+    app::{Context, Message},
+    widget::{modal::modal, DatePicker},
+};
 
 use super::{line_chart::LineChartEntry, sidebar::sidebar, LineChart, Widget};
 
@@ -22,6 +25,7 @@ impl From<DashboardMessage> for Message {
 #[derive(Debug)]
 pub struct Dashboard {
     chart: LineChart,
+    date_picker: DatePicker,
 }
 
 impl Dashboard {
@@ -30,25 +34,41 @@ impl Dashboard {
 
         Dashboard {
             chart: LineChart::new(weights),
+            date_picker: DatePicker::new("Test date"),
         }
     }
 }
 
 impl Widget for Dashboard {
     fn view(&self) -> Element<Message> {
+        let date_picker = self
+            .date_picker
+            .view(|new_date| Message::DatePickerDateChange(new_date));
         let canvas = Canvas::new(&self.chart)
             .width(Length::Fill)
             .height(Length::Fill);
-        let content = column![Text::new("Dashboard").size(40), canvas].spacing(10);
+        let content = column![Text::new("Dashboard").size(40), date_picker, canvas].spacing(10);
 
-        row![sidebar(), content]
+        let content_with_sidebar = row![sidebar(), content]
             .height(Length::Fill)
             .padding(20)
-            .spacing(20)
-            .into()
+            .spacing(20);
+
+        if self.date_picker.calendar_open() {
+            return modal(
+                content_with_sidebar.into(),
+                self.date_picker
+                    .view_modal(|new_date| Message::DatePickerDateChange(new_date)),
+                Message::CloseDatePicker.into(),
+            );
+        }
+
+        content_with_sidebar.into()
     }
 
-    fn update(&mut self, _ctx: &mut Context, _msg: Message) -> Task<Message> {
+    fn update(&mut self, _ctx: &mut Context, msg: Message) -> Task<Message> {
+        self.date_picker.handle_message(msg);
+
         Task::none()
     }
 }
