@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 chomp-db = { path = "../chomp-db" }
 chomp-services = { path = "../chomp-services" }
-iced = { version = "0.13.1", features = ["canvas", "tokio"] }
+iced = { version = "0.13.1", features = ["canvas", "tokio", "svg"] }
 serde_json = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 chrono = { workspace = true, features = ["serde"] }
