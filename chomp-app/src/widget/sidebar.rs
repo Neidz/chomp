@@ -8,14 +8,11 @@ use crate::app::{Message, NextWidget};
 pub fn sidebar() -> Element<'static, Message> {
     let buttons = vec![
         ("Dashboard", Message::ChangeWidget(NextWidget::Dashboard)),
-        ("Meal List", Message::ChangeWidget(NextWidget::MealList)),
+        ("Meals", Message::ChangeWidget(NextWidget::MealList)),
+        ("Products", Message::ChangeWidget(NextWidget::ProductList)),
+        ("Weights", Message::ChangeWidget(NextWidget::WeightList)),
         (
-            "Product List",
-            Message::ChangeWidget(NextWidget::ProductList),
-        ),
-        ("Weight List", Message::ChangeWidget(NextWidget::WeightList)),
-        (
-            "Nutrition Target List",
+            "Nutrition Targets",
             Message::ChangeWidget(NextWidget::NutritionTargetList),
         ),
         ("Tools", Message::ChangeWidget(NextWidget::Tools)),
