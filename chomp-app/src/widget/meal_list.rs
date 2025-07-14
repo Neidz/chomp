@@ -142,9 +142,9 @@ impl Widget for MealList {
                     MealListMessage::CopyMealProductsMeal(None).into(),
                     true,
                 ),
-                self.day.view_modal(),
+                copy_form.from_day.view_modal(),
                 Message::CloseDatePicker,
-                self.day.calendar_open(),
+                copy_form.from_day.calendar_open(),
             );
         }
 
