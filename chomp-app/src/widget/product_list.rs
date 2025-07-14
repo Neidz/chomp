@@ -70,7 +70,7 @@ impl Widget for ProductList {
 
         let content = column![
             row![
-                Text::new("Product list").size(40),
+                Text::new("Products").size(40),
                 Button::new("+").on_press(ProductListMessage::RedirectToCreate.into())
             ]
             .spacing(10)

@@ -45,7 +45,7 @@ impl Widget for NutritionTargetList {
 
         let content = column![
             row![
-                Text::new("Nutrition target list").size(40),
+                Text::new("Nutrition targets").size(40),
                 Button::new("+").on_press(NutritionTargetListMessage::RedirectToCreate.into())
             ]
             .spacing(10)

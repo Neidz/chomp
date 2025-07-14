@@ -45,7 +45,7 @@ impl Widget for WeightList {
 
         let content = column![
             row![
-                Text::new("Weight list").size(40),
+                Text::new("Weights").size(40),
                 Button::new("+").on_press(WeightListMessage::RedirectToCreate.into())
             ]
             .spacing(10)
