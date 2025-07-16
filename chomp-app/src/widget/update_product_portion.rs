@@ -114,7 +114,8 @@ impl Widget for UpdateProductPortion {
                         if let Some(err) = ctx.services.product_portion.update(portion).err() {
                             match err {
                                 ServiceError::UniqueConstraintViolation(unique_field)
-                                    if unique_field == "product_portions.name" =>
+                                    if unique_field
+                                        == "product_portions.name, product_portions.product_id" =>
                                 {
                                     self.name.error = Some(InputFormFieldError::Custom(
                                         "Portion with this name already exists for this product"
