@@ -114,7 +114,6 @@ impl Widget for ProductList {
 
 fn list_header_row() -> Element<'static, Message> {
     let row = row![
-        Text::new("Id").width(Length::Fill),
         Text::new("Name").width(Length::Fill),
         Text::new("Company").width(Length::Fill),
         Text::new("Calories (kcal/100g)").width(Length::Fill),
@@ -131,7 +130,6 @@ fn list_header_row() -> Element<'static, Message> {
 
 fn list_row(p: &Product, even: bool) -> Element<Message> {
     let row = row![
-        Text::new(format!("{}", p.id)).width(Length::Fill),
         Text::new(&p.name).width(Length::Fill),
         Text::new(p.company.as_deref().unwrap_or("-")).width(Length::Fill),
         Text::new(format!("{:.1}", p.calories)).width(Length::Fill),
