@@ -235,7 +235,15 @@ impl App {
                             panic!()
                         }
                     };
-                    Box::new(MealList::new(day, meals, stats, target))
+                    let portions = match self.ctx.services.product_portion.list_all() {
+                        Ok(m) => m,
+                        Err(err) => {
+                            tracing::error!("Failed to get product portions: {}", err);
+                            panic!()
+                        }
+                    };
+
+                    Box::new(MealList::new(day, meals, stats, target, portions))
                 }
                 NextWidget::NutritionTargetList => {
                     let targets = self

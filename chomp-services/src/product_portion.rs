@@ -98,6 +98,30 @@ impl ProductPortionService {
         Ok(())
     }
 
+    pub fn list_all(&self) -> Result<Vec<ProductPortion>, ServiceError> {
+        let query = "
+            SELECT id, name, product_id, weight
+            FROM product_portions
+            ORDER BY id ASC";
+
+        let db = self.db.borrow();
+        let mut stmt = db.prepare(query)?;
+
+        let product_portions = stmt
+            .query_map([], |row| {
+                Ok(ProductPortion {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    product_id: row.get(2)?,
+                    weight: row.get(3)?,
+                })
+            })
+            .map_err(ServiceError::from)?
+            .collect::<Result<Vec<ProductPortion>, _>>()?;
+
+        Ok(product_portions)
+    }
+
     pub fn list(&self, product_id: usize) -> Result<Vec<ProductPortion>, ServiceError> {
         let query = "
             SELECT id, name, product_id, weight

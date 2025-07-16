@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use chomp_services::{
-    AddMealProduct, Meal, MealDayStats, MealProduct, NutritionTarget, Product,
+    AddMealProduct, Meal, MealDayStats, MealProduct, NutritionTarget, Product, ProductPortion,
     UpdateMealProductWeight,
 };
 use chrono::{Days, NaiveDate};
@@ -19,16 +19,20 @@ use super::{
     modal, sidebar, style::TableRowStyle, DatePicker, InputFormField, InputFormFieldError, Widget,
 };
 
+type PortionId = usize;
+
 #[derive(Debug, Clone)]
 pub enum MealListMessage {
     CreateMealProductFormMeal(Option<usize>),
     CreateMealProductFormWeight(String),
     CreateMealProductFormProduct(usize),
-    SubmitAddMealProductForm,
+    SubmitAddMealProductFormWithWeight,
+    SubmitAddMealProductFormWithPortion(PortionId),
 
     UpdateMealProductFormMealProduct(Option<usize>),
     UpdateMealProductFormWeight(String),
-    SubmitUpdateMealProductForm,
+    SubmitUpdateMealProductFormWithWeight,
+    SubmitUpdateMealProductFormWithPortion(PortionId),
 
     DeleteMealProduct(usize),
 
@@ -48,6 +52,7 @@ pub struct MealList {
     meals: Vec<Meal>,
     stats: MealDayStats,
     target: NutritionTarget,
+    product_portions: Vec<ProductPortion>,
 
     add_meal_product_form: Option<MealProductForm>,
     update_meal_product_form: Option<UpdateMealProductForm>,
@@ -60,6 +65,7 @@ impl MealList {
         meals: Vec<Meal>,
         stats: MealDayStats,
         target: NutritionTarget,
+        product_portions: Vec<ProductPortion>,
     ) -> Self {
         assert!(!meals.is_empty());
         MealList {
@@ -67,6 +73,7 @@ impl MealList {
             meals,
             stats,
             target,
+            product_portions,
             add_meal_product_form: None,
             update_meal_product_form: None,
             copy_meal_products_form: None,
@@ -204,9 +211,18 @@ impl Widget for MealList {
                 }
                 MealListMessage::CreateMealProductFormProduct(product_id) => {
                     let form = self.add_meal_product_form.as_mut().unwrap();
+
+                    let portions = self
+                        .product_portions
+                        .iter()
+                        .cloned()
+                        .filter(|p| p.product_id == product_id)
+                        .collect();
+
                     form.product_id = Some(product_id);
+                    form.available_product_portions = portions;
                 }
-                MealListMessage::SubmitAddMealProductForm => {
+                MealListMessage::SubmitAddMealProductFormWithWeight => {
                     match self.add_meal_product_form.as_mut().unwrap().parse() {
                         Ok(add_meal_product) => {
                             if let Err(err) = ctx.services.meal.add_product(add_meal_product) {
@@ -221,6 +237,27 @@ impl Widget for MealList {
                         }
                     }
                 }
+                MealListMessage::SubmitAddMealProductFormWithPortion(portion_id) => {
+                    let portion = self
+                        .product_portions
+                        .iter()
+                        .find(|p| p.id == portion_id)
+                        .unwrap();
+                    let form = self.add_meal_product_form.as_ref().unwrap();
+
+                    let add_meal_product = AddMealProduct {
+                        meal_id: form.meal.id,
+                        product_id: form.product_id.unwrap(),
+                        weight: portion.weight,
+                    };
+
+                    if let Err(err) = ctx.services.meal.add_product(add_meal_product) {
+                        tracing::error!("Failed to add product: {}", err);
+                        std::process::exit(1);
+                    }
+                    self.refresh(ctx);
+                    self.add_meal_product_form = None;
+                }
                 MealListMessage::UpdateMealProductFormMealProduct(meal_product_id) => {
                     match meal_product_id {
                         Some(id) => {
@@ -231,8 +268,17 @@ impl Widget for MealList {
                                     std::process::exit(1);
                                 }
                             };
-                            self.update_meal_product_form =
-                                Some(UpdateMealProductForm::new(&meal_product));
+
+                            let portions = self
+                                .product_portions
+                                .iter()
+                                .cloned()
+                                .filter(|p| p.product_id == meal_product.product_id)
+                                .collect();
+
+                            let mut form = UpdateMealProductForm::new(&meal_product);
+                            form.available_product_portions = portions;
+                            self.update_meal_product_form = Some(form);
                         }
                         None => {
                             self.update_meal_product_form = None;
@@ -243,7 +289,7 @@ impl Widget for MealList {
                     let form = self.update_meal_product_form.as_mut().unwrap();
                     form.weight.raw_input = raw_weight;
                 }
-                MealListMessage::SubmitUpdateMealProductForm => {
+                MealListMessage::SubmitUpdateMealProductFormWithWeight => {
                     match self.update_meal_product_form.as_mut().unwrap().parse() {
                         Ok(update_meal_product_weight) => {
                             ctx.services
@@ -258,6 +304,30 @@ impl Widget for MealList {
                             tracing::warn!("Failed to parse update meal product form: {}", err)
                         }
                     }
+                }
+                MealListMessage::SubmitUpdateMealProductFormWithPortion(portion_id) => {
+                    let portion = self
+                        .product_portions
+                        .iter()
+                        .find(|p| p.id == portion_id)
+                        .unwrap();
+                    let form = self.update_meal_product_form.as_ref().unwrap();
+
+                    let update_meal_product_weight = UpdateMealProductWeight {
+                        meal_product_id: form.meal_product.id,
+                        weight: portion.weight,
+                    };
+
+                    if let Err(err) = ctx
+                        .services
+                        .meal
+                        .update_product_weight(update_meal_product_weight)
+                    {
+                        tracing::error!("Failed to update meal product: {}", err);
+                        std::process::exit(1);
+                    }
+                    self.refresh(ctx);
+                    self.update_meal_product_form = None;
                 }
                 MealListMessage::DeleteMealProduct(meal_product_id) => {
                     if let Err(err) = ctx.services.meal.delete_product(meal_product_id) {
@@ -463,6 +533,7 @@ pub struct MealProductForm {
     pub weight: InputFormField<f32>,
     pub meal: Meal,
     pub product_id: Option<usize>,
+    pub available_product_portions: Vec<ProductPortion>,
 }
 
 impl MealProductForm {
@@ -484,6 +555,7 @@ impl MealProductForm {
             weight: InputFormField::new("Weight (g)", "20.0"),
             meal: meal.to_owned(),
             product_id: None,
+            available_product_portions: Vec::new(),
         }
     }
 
@@ -512,7 +584,7 @@ impl MealProductForm {
     }
 }
 
-pub fn render_add_product_to_meal_form(form: &MealProductForm) -> Element<Message> {
+fn render_add_product_to_meal_form(form: &MealProductForm) -> Element<Message> {
     let selected_product = match &form.product_id {
         Some(id) => form.combo_box_state.options().iter().find(|p| p.id == *id),
         None => None,
@@ -526,31 +598,52 @@ pub fn render_add_product_to_meal_form(form: &MealProductForm) -> Element<Messag
     )
     .width(Length::Fill);
 
-    container(
-        column![
-            Text::new(format!("Add product to {}", form.meal.name)).size(30),
-            combo_box,
+    let mut column = column![
+        Text::new(format!("Add product to {}", form.meal.name)).size(30),
+        combo_box,
+    ]
+    .spacing(10);
+
+    for portion in &form.available_product_portions {
+        let button = Button::new(Text::new(format!("{} ({}g)", portion.name, portion.weight)))
+            .width(Length::Fill)
+            .on_press(MealListMessage::SubmitAddMealProductFormWithPortion(portion.id).into());
+
+        column = column.push(button);
+    }
+
+    if !&form.available_product_portions.is_empty() {
+        column = column.push(Text::new("or"));
+    }
+
+    column = column
+        .push(
             form.weight
-                .view(|w| { MealListMessage::CreateMealProductFormWeight(w).into() }),
+                .view(|w| MealListMessage::CreateMealProductFormWeight(w).into()),
+        )
+        .push(
             Button::new("Add Product")
                 .width(Length::Fill)
-                .on_press(MealListMessage::SubmitAddMealProductForm.into()),
+                .on_press(MealListMessage::SubmitAddMealProductFormWithWeight.into()),
+        )
+        .push(
             Button::new("Cancel")
                 .width(Length::Fill)
-                .on_press(MealListMessage::CreateMealProductFormMeal(None).into())
-        ]
-        .spacing(10),
-    )
-    .width(300)
-    .padding(30)
-    .style(container::rounded_box)
-    .into()
+                .on_press(MealListMessage::CreateMealProductFormMeal(None).into()),
+        );
+
+    container(column)
+        .width(300)
+        .padding(30)
+        .style(container::rounded_box)
+        .into()
 }
 
 #[derive(Debug)]
 pub struct UpdateMealProductForm {
     pub meal_product: MealProduct,
     pub weight: InputFormField<f32>,
+    pub available_product_portions: Vec<ProductPortion>,
 }
 
 impl UpdateMealProductForm {
@@ -562,6 +655,7 @@ impl UpdateMealProductForm {
                 "20.0",
                 &meal_product.weight.to_string(),
             ),
+            available_product_portions: Vec::new(),
         }
     }
 
@@ -585,25 +679,44 @@ impl UpdateMealProductForm {
     }
 }
 
-pub fn render_update_meal_product_form(form: &UpdateMealProductForm) -> Element<Message> {
-    container(
-        column![
-            Text::new(format!("Edit weight of {}", form.meal_product.name)).size(30),
+fn render_update_meal_product_form(form: &UpdateMealProductForm) -> Element<Message> {
+    let mut column =
+        column![Text::new(format!("Edit weight of {}", form.meal_product.name)).size(30),]
+            .spacing(10);
+
+    for portion in &form.available_product_portions {
+        let button = Button::new(Text::new(format!("{} ({}g)", portion.name, portion.weight)))
+            .width(Length::Fill)
+            .on_press(MealListMessage::SubmitUpdateMealProductFormWithPortion(portion.id).into());
+
+        column = column.push(button);
+    }
+
+    if !&form.available_product_portions.is_empty() {
+        column = column.push(Text::new("or"));
+    }
+
+    column = column
+        .push(
             form.weight
-                .view(|w| { MealListMessage::UpdateMealProductFormWeight(w).into() }),
+                .view(|w| MealListMessage::UpdateMealProductFormWeight(w).into()),
+        )
+        .push(
             Button::new("Update Weight")
                 .width(Length::Fill)
-                .on_press(MealListMessage::SubmitUpdateMealProductForm.into()),
+                .on_press(MealListMessage::SubmitUpdateMealProductFormWithWeight.into()),
+        )
+        .push(
             Button::new("Cancel")
                 .width(Length::Fill)
-                .on_press(MealListMessage::UpdateMealProductFormMealProduct(None).into())
-        ]
-        .spacing(10),
-    )
-    .width(300)
-    .padding(30)
-    .style(container::rounded_box)
-    .into()
+                .on_press(MealListMessage::UpdateMealProductFormMealProduct(None).into()),
+        );
+
+    container(column)
+        .width(300)
+        .padding(30)
+        .style(container::rounded_box)
+        .into()
 }
 
 #[derive(Debug)]
@@ -635,7 +748,7 @@ impl CopyMealProductsForm {
     }
 }
 
-pub fn render_copy_meal_products_form(form: &CopyMealProductsForm) -> Element<Message> {
+fn render_copy_meal_products_form(form: &CopyMealProductsForm) -> Element<Message> {
     container(
         column![
             Text::new(format!(
