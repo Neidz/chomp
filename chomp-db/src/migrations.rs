@@ -78,3 +78,10 @@ pub const CREATE_PRODUCT_PORTIONS_TABLE_QUERY_7: Migration = Migration {
         );",
     id: 7,
 };
+
+pub const CREATE_PRODUCT_PORTIONS_UNIQUE_NAME_CONSTRAINT_QUERY_8: Migration = Migration {
+    query: "
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_product_portions_name_product_id
+        ON product_portions (name, product_id);",
+    id: 8,
+};

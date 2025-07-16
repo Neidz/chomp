@@ -140,6 +140,8 @@ fn list_row(p: &Product, even: bool) -> Element<Message> {
         Text::new(format!("{:.1}", p.carbohydrates)).width(Length::Fill),
         row![
             Button::new("Update").on_press(Message::ChangeWidget(NextWidget::UpdateProduct(p.id))),
+            Button::new("Portions")
+                .on_press(Message::ChangeWidget(NextWidget::ProductPortionList(p.id))),
             Button::new("Delete")
                 .style(button::danger)
                 .on_press(ProductListMessage::DeleteProduct(p.id).into())

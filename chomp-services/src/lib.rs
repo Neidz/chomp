@@ -24,7 +24,7 @@ use crate::product_portion::ProductPortionService;
 
 pub struct Services {
     pub product: ProductService,
-    pub product_portions: ProductPortionService,
+    pub product_portion: ProductPortionService,
     pub weight: WeightService,
     pub meal: MealService,
     pub nutrition_target: NutritionTargetService,
@@ -35,14 +35,14 @@ impl Services {
         let db_rc = Rc::new(RefCell::new(db));
 
         let product = ProductService::new(db_rc.clone());
-        let product_portions = ProductPortionService::new(db_rc.clone());
+        let product_portion = ProductPortionService::new(db_rc.clone());
         let weight = WeightService::new(db_rc.clone());
         let meal = MealService::new(db_rc.clone());
         let nutrition_target = NutritionTargetService::new(db_rc.clone());
 
         Services {
             product,
-            product_portions,
+            product_portion,
             weight,
             meal,
             nutrition_target,

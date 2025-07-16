@@ -46,7 +46,7 @@ impl ProductPortionService {
         Ok(())
     }
 
-    pub fn update(&self, id: usize, product_portion: ProductPortion) -> Result<(), ServiceError> {
+    pub fn update(&self, product_portion: ProductPortion) -> Result<(), ServiceError> {
         let query = "
             UPDATE product_portions
             SET name=?1, weight=?2
@@ -102,13 +102,15 @@ impl ProductPortionService {
         let query = "
             SELECT id, name, product_id, weight
             FROM product_portions
+            WHERE product_id = ?1
             ORDER BY id ASC";
+        let args = params![product_id];
 
         let db = self.db.borrow();
         let mut stmt = db.prepare(query)?;
 
         let product_portions = stmt
-            .query_map([], |row| {
+            .query_map(args, |row| {
                 Ok(ProductPortion {
                     id: row.get(0)?,
                     name: row.get(1)?,

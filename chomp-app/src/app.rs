@@ -7,19 +7,27 @@ use iced::{
 
 use crate::widget::{
     CalendarMonth, CreateNutritionTarget, CreateNutritionTargetMessage, CreateProduct,
-    CreateProductMessage, CreateWeight, CreateWeightMessage, Dashboard, DashboardMessage, MealList,
-    MealListMessage, NutritionTargetList, NutritionTargetListMessage, ProductList,
-    ProductListMessage, Tools, ToolsMessage, UpdateNutritionTarget, UpdateNutritionTargetMessage,
-    UpdateProduct, UpdateProductMessage, UpdateWeight, UpdateWeightMessage, WeightList,
-    WeightListMessage, Widget,
+    CreateProductMessage, CreateProductPortion, CreateProductPortionMessage, CreateWeight,
+    CreateWeightMessage, Dashboard, DashboardMessage, MealList, MealListMessage,
+    NutritionTargetList, NutritionTargetListMessage, ProductList, ProductListMessage,
+    ProductPortionList, ProductPortionListMessage, Tools, ToolsMessage, UpdateNutritionTarget,
+    UpdateNutritionTargetMessage, UpdateProduct, UpdateProductMessage, UpdateProductPortion,
+    UpdateProductPortionMessage, UpdateWeight, UpdateWeightMessage, WeightList, WeightListMessage,
+    Widget,
 };
+
+type ProductId = usize;
+type ProductPortionId = usize;
 
 #[derive(Debug, Clone)]
 pub enum NextWidget {
     Dashboard,
     ProductList,
     CreateProduct,
-    UpdateProduct(usize),
+    UpdateProduct(ProductId),
+    ProductPortionList(ProductId),
+    CreateProductPortion(ProductId),
+    UpdateProductPortion(ProductId, ProductPortionId),
     WeightList,
     CreateWeight,
     UpdateWeight(NaiveDate),
@@ -45,6 +53,9 @@ pub enum Message {
     ProductList(ProductListMessage),
     CreateProduct(CreateProductMessage),
     UpdateProduct(UpdateProductMessage),
+    ProductPortionList(ProductPortionListMessage),
+    CreateProductPortion(CreateProductPortionMessage),
+    UpdateProductPortion(UpdateProductPortionMessage),
     WeightList(WeightListMessage),
     CreateWeight(CreateWeightMessage),
     UpdateWeight(UpdateWeightMessage),
@@ -126,8 +137,8 @@ impl App {
                     Box::new(ProductList::new(products))
                 }
                 NextWidget::CreateProduct => Box::new(CreateProduct::new()),
-                NextWidget::UpdateProduct(id) => {
-                    let product = match self.ctx.services.product.read(id) {
+                NextWidget::UpdateProduct(product_id) => {
+                    let product = match self.ctx.services.product.read(product_id) {
                         Ok(p) => p,
                         Err(err) => {
                             tracing::error!("Failed to get product by id: {}", err);
@@ -135,6 +146,51 @@ impl App {
                         }
                     };
                     Box::new(UpdateProduct::new(product))
+                }
+                NextWidget::ProductPortionList(product_id) => {
+                    let product = match self.ctx.services.product.read(product_id) {
+                        Ok(p) => p,
+                        Err(err) => {
+                            tracing::error!("Failed to get product by id: {}", err);
+                            std::process::exit(1);
+                        }
+                    };
+                    let portions = match self.ctx.services.product_portion.list(product_id) {
+                        Ok(p) => p,
+                        Err(err) => {
+                            tracing::error!("Failed to get product portion list: {}", err);
+                            std::process::exit(1);
+                        }
+                    };
+                    Box::new(ProductPortionList::new(product, portions))
+                }
+                NextWidget::CreateProductPortion(product_id) => {
+                    let product = match self.ctx.services.product.read(product_id) {
+                        Ok(p) => p,
+                        Err(err) => {
+                            tracing::error!("Failed to get product by id: {}", err);
+                            std::process::exit(1);
+                        }
+                    };
+
+                    Box::new(CreateProductPortion::new(&product))
+                }
+                NextWidget::UpdateProductPortion(product_id, product_portion_id) => {
+                    let product = match self.ctx.services.product.read(product_id) {
+                        Ok(p) => p,
+                        Err(err) => {
+                            tracing::error!("Failed to get product by id: {}", err);
+                            std::process::exit(1);
+                        }
+                    };
+                    let portion = match self.ctx.services.product_portion.read(product_portion_id) {
+                        Ok(p) => p,
+                        Err(err) => {
+                            tracing::error!("Failed to get product portion list: {}", err);
+                            std::process::exit(1);
+                        }
+                    };
+                    Box::new(UpdateProductPortion::new(&product, &portion))
                 }
                 NextWidget::WeightList => {
                     let weights = self.ctx.services.weight.list().unwrap_or_default();
