@@ -215,8 +215,8 @@ impl Widget for MealList {
                     let portions = self
                         .product_portions
                         .iter()
-                        .cloned()
                         .filter(|p| p.product_id == product_id)
+                        .cloned()
                         .collect();
 
                     form.product_id = Some(product_id);
@@ -272,8 +272,8 @@ impl Widget for MealList {
                             let portions = self
                                 .product_portions
                                 .iter()
-                                .cloned()
                                 .filter(|p| p.product_id == meal_product.product_id)
+                                .cloned()
                                 .collect();
 
                             let mut form = UpdateMealProductForm::new(&meal_product);
