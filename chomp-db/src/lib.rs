@@ -8,7 +8,12 @@ use migrations::{
 };
 use rusqlite::Connection;
 
-use crate::{error::Error, migrations::RENAME_CALORIE_TARGETS_TO_NUTRITION_TARGETS_QUERY_6};
+use crate::{
+    error::Error,
+    migrations::{
+        CREATE_PRODUCT_PORTIONS_TABLE_QUERY_7, RENAME_CALORIE_TARGETS_TO_NUTRITION_TARGETS_QUERY_6,
+    },
+};
 
 mod error;
 mod migrate;
@@ -30,6 +35,7 @@ fn run_migrations(conn: &Connection) -> Result<(), String> {
         CREATE_CALORIE_TARGETS_TABLE_QUERY_4,
         CREATE_WEIGHTS_TABLE_QUERY_5,
         RENAME_CALORIE_TARGETS_TO_NUTRITION_TARGETS_QUERY_6,
+        CREATE_PRODUCT_PORTIONS_TABLE_QUERY_7,
     ];
 
     migrate(conn, migrations)

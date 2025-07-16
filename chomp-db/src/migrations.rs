@@ -66,3 +66,15 @@ pub const RENAME_CALORIE_TARGETS_TO_NUTRITION_TARGETS_QUERY_6: Migration = Migra
         ALTER TABLE calorie_targets RENAME TO nutrition_targets",
     id: 6,
 };
+
+pub const CREATE_PRODUCT_PORTIONS_TABLE_QUERY_7: Migration = Migration {
+    query: "
+        CREATE TABLE IF NOT EXISTS product_portions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+            name TEXT NOT NULL,
+            product_id INTEGER NOT NULL,
+            weight REAL NOT NULL,
+            FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+        );",
+    id: 7,
+};
