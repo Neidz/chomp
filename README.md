@@ -1,8 +1,6 @@
 # Chomp
 Welcome to Chomp, application for tracking calories, fats, proteins, carbohydrates and weight. With Chomp you create your own library of products and then construct meals with them, Chomp helps you track calories and macros for those meals and also track your weight so that you can understand your progress. Everything is stored locally, there's no account and no need for internet.
 
-https://github.com/user-attachments/assets/ee579f7b-4d1b-45a1-b71d-d18a9d88533f
-
 ## Development and stability
 Chomp is still in active development and I have some plans for new features that will be added in the future. That being said it can be considered stable and it won't break your library of products and history of meals/weight. You will never have to remove old database and create new one because of some breaking changes.
 
@@ -44,3 +42,5 @@ I never ran this app on windows and I'm not even sure if path for database will 
 <img width="2552" height="1434" alt="products" src="https://github.com/user-attachments/assets/e4eea21f-9aea-463b-99a2-968f7fe9d7c9" />
 <img width="2553" height="1434" alt="weights" src="https://github.com/user-attachments/assets/e7906ec6-811c-43da-ab72-5496cc940733" />
 <img width="2551" height="1430" alt="targets" src="https://github.com/user-attachments/assets/18fe52b8-0f1c-4cf4-b4ed-e1227d5d07f3" />
+
+https://github.com/user-attachments/assets/ee579f7b-4d1b-45a1-b71d-d18a9d88533f
