@@ -53,7 +53,7 @@ pub fn prepare_conn() -> Result<Connection, Error> {
         .join(".local")
         .join("share")
         .join("chomp")
-        .join("data-gui.db");
+        .join("data.db");
 
     let db_parent = match db_path.parent() {
         Some(p) => p,
